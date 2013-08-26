@@ -1,20 +1,40 @@
 package edu.uw.zookeeper.clients.trace;
 
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
+import edu.uw.zookeeper.jackson.databind.ProtocolRequestDeserializer;
+import edu.uw.zookeeper.jackson.databind.ProtocolRequestSerializer;
+import edu.uw.zookeeper.jackson.databind.RequestRecordDeserializer;
+import edu.uw.zookeeper.jackson.databind.RequestRecordSerializer;
+import edu.uw.zookeeper.jackson.databind.ResponseRecordDeserializer;
+import edu.uw.zookeeper.jackson.databind.ResponseRecordSerializer;
+import edu.uw.zookeeper.jackson.databind.Version;
+import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.proto.Records;
+
 public class JacksonModule extends AbstractModule {
 
-    public static ImmutableSet<Class<? extends TraceEvent>> eventTypes = ImmutableSet.<Class<? extends TraceEvent>>of(
-            TimestampEvent.class,
-            LatencyMeasurementEvent.class);
+    public static JacksonModule create() {
+        return new JacksonModule();
+    }
+    
+    public static final com.fasterxml.jackson.core.Version PROJECT_VERSION = new com.fasterxml.jackson.core.Version(
+            Integer.valueOf(Version.VERSION_FIELDS[0]), 
+            Integer.valueOf(Version.VERSION_FIELDS[1]), 
+            Integer.valueOf(Version.VERSION_FIELDS[2]),
+            Version.VERSION_FIELDS[3], 
+            Version.GROUP, Version.ARTIFACT);
     
     @Override
     protected void configure() {
@@ -22,27 +42,21 @@ public class JacksonModule extends AbstractModule {
 
     @Provides @Singleton
     public ObjectMapper getObjectMapper() {
+        List<JsonSerializer<?>> serializers = ImmutableList.<JsonSerializer<?>>of(
+                RequestRecordSerializer.create(),
+                ResponseRecordSerializer.create(),
+                ProtocolRequestSerializer.create(),
+                ProtocolResponseHeaderSerializer.create(),
+                TraceEventHeader.serializer());
+        Map<Class<?>, JsonDeserializer<?>> deserializers = ImmutableMap.<Class<?>, JsonDeserializer<?>>of(
+                Records.Request.class, RequestRecordDeserializer.create(),
+                Records.Response.class, ResponseRecordDeserializer.create(),
+                Operation.ProtocolRequest.class, ProtocolRequestDeserializer.create(),
+                Operation.ProtocolResponse.class, ProtocolResponseHeaderDeserializer.create(),
+                TraceEventHeader.class, TraceEventHeader.deserializer());
+        SimpleModule module = new SimpleModule(Version.PROJECT_NAME, PROJECT_VERSION, deserializers, serializers);
         ObjectMapper instance = new ObjectMapper();
+        instance.registerModule(module);
         return instance;
-    }
-    
-    @Provides @Singleton
-    public JsonFactory getJsonFactory(ObjectMapper mapper) {
-        return mapper.getFactory();
-    }
-
-    @Provides @Singleton
-    public TraceEventSerializer getTraceEventGenerator() {
-        return TraceEventSerializer.create();
-    }
-    
-    @Provides @Singleton
-    public TraceEventDeserializer getTraceEventParser() {
-        return TraceEventDeserializer.forTypes(eventTypes);
-    }
-    
-    @Provides @Singleton
-    public ByteBufAllocator getByteBufAllocator() {
-        return new PooledByteBufAllocator();
     }
 }

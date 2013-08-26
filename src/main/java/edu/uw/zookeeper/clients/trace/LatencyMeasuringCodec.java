@@ -69,8 +69,11 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
     @Override
     public void encode(Message.ClientSession message, ByteBuf output) throws IOException {
         delegate.encode(message, output);
-        if (! (message instanceof Operation.RequestId) || ! OpCodeXid.has(((Operation.RequestId) message).xid())) {
-            times.offer(new RequestSentEvent(message, System.nanoTime()));
+        if (message instanceof Message.ClientRequest<?>) {
+            Message.ClientRequest<?> request = (Message.ClientRequest<?>) message;
+            if (! OpCodeXid.has(request.xid())) {
+                times.offer(new RequestSentEvent(request, System.nanoTime()));
+            }
         }
     }
 
@@ -84,26 +87,16 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
                 ConnectMessage.Response response = (ConnectMessage.Response) message;
                 assert (sessionId == Session.UNINITIALIZED_ID);
                 sessionId = response.getSessionId();
-                RequestSentEvent pending = times.peek();
-                if ((pending != null) && (pending.request instanceof ConnectMessage.Request)) {
-                    times.remove(pending);
-                    if (sessionId != Session.UNINITIALIZED_ID) {
-                        long latency = System.nanoTime() - pending.nanos;
-                        LatencyEvent event = LatencyEvent.create(latency, sessionId, pending.request, message); 
-                        publisher.post(event);
-                    }
-                }
             } else {
                 Message.ServerResponse<?> response = (Message.ServerResponse<?>) message;
                 if (! OpCodeXid.has(response.xid())) {
                     assert (sessionId != Session.UNINITIALIZED_ID);
                     RequestSentEvent pending = times.peek();
                     if (pending != null) {
-                        Message.ClientRequest<?> request = (Message.ClientRequest<?>) pending.request;
-                        if (request.xid() == response.xid()) {
+                        if (pending.request.xid() == response.xid()) {
                             times.remove(pending);
                             long latency = System.nanoTime() - pending.nanos;
-                            LatencyEvent event = LatencyEvent.create(latency, sessionId, pending.request, message); 
+                            LatencyEvent event = LatencyEvent.create(latency, sessionId, pending.request, response); 
                             publisher.post(event);
                         }
                     }
@@ -134,10 +127,10 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
     
     protected static class RequestSentEvent {
         
-        protected final Message.ClientSession request;
+        protected final Message.ClientRequest<?> request;
         protected final long nanos;
         
-        public RequestSentEvent(Message.ClientSession request, long nanos) {
+        public RequestSentEvent(Message.ClientRequest<?> request, long nanos) {
             this.request = request;
             this.nanos = nanos;
         }

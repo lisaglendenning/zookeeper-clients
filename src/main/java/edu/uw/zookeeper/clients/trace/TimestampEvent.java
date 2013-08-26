@@ -1,32 +1,32 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Objects;
 
 @TraceEventType(TraceEventTag.TIMESTAMP_EVENT)
+@JsonSerialize(using=TimestampEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
+@JsonDeserialize(using=TimestampEvent.Deserializer.class)
 public final class TimestampEvent implements TraceEvent {
 
     public static TimestampEvent currentTimeMillis() {
         return new TimestampEvent(System.currentTimeMillis());
-    }
-    
-    @JacksonDeserializer
-    public static TimestampEvent deserialize(JsonParser parser) throws JsonParseException, IOException {
-        long timestamp = parser.getLongValue();
-        return new TimestampEvent(timestamp);
-    }
-
-    @JacksonSerializer
-    public static void serialize(TimestampEvent value, JsonGenerator generator)
-            throws JsonGenerationException, IOException {
-        generator.writeNumber(value.timestamp);
     }
     
     private final long timestamp;
@@ -66,5 +66,67 @@ public final class TimestampEvent implements TraceEvent {
     @Override
     public int hashCode() {
         return Objects.hashCode(timestamp);
+    }
+
+    public static class Serializer extends StdSerializer<TimestampEvent> {
+    
+        public static Serializer create() {
+            return new Serializer();
+        }
+        
+        public Serializer() {
+            super(TimestampEvent.class);
+        }
+    
+        @Override
+        public void serialize(TimestampEvent value, JsonGenerator json,
+                SerializerProvider provider) throws IOException,
+                JsonGenerationException {
+            json.writeStartArray();
+            json.writeNumber(value.timestamp);
+            json.writeEndArray();
+        }
+    
+        @Override
+        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
+            throws JsonMappingException {
+            return createSchemaNode("array");
+        }
+    }
+
+    public static class Deserializer extends StdDeserializer<TimestampEvent> {
+    
+        public static Deserializer create() {
+            return new Deserializer();
+        }
+    
+        private static final long serialVersionUID = 3834630520589034004L;
+    
+        public Deserializer() {
+            super(TimestampEvent.class);
+        }
+    
+        @Override
+        public TimestampEvent deserialize(JsonParser json,
+                DeserializationContext ctxt) throws IOException,
+                JsonProcessingException {
+            if (! json.isExpectedStartArrayToken()) {
+                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.START_ARRAY.toString());
+            }
+            json.nextToken();
+            long timestamp = json.getLongValue();
+            json.nextToken();
+            if (json.getCurrentToken() != JsonToken.END_ARRAY) {
+                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.END_ARRAY.toString());
+            }
+            json.nextToken();
+            TimestampEvent value = new TimestampEvent(timestamp);
+            return value;
+        }
+        
+        @Override
+        public boolean isCachable() { 
+            return true; 
+        }
     }
 }

@@ -10,8 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Queues;
 
 import edu.uw.zookeeper.common.ExecutedActor;
@@ -20,12 +20,11 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
 
     public static TraceWriter forFile(
             File file,
-            JsonFactory factory, 
-            TraceEventSerializer generator,
+            ObjectWriter writer,
             Executor executor) throws IOException {
         return create(
-                factory.createGenerator(file, ENCODING), 
-                generator,
+                writer.getFactory().createGenerator(file, ENCODING), 
+                writer,
                 executor);
     }
     
@@ -34,22 +33,21 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
      */
     public static TraceWriter forStream(
             OutputStream stream,
-            JsonFactory factory, 
-            TraceEventSerializer generator,
+            ObjectWriter writer,
             Executor executor) throws IOException {
         return create(
-                factory.createGenerator(stream, ENCODING), 
-                generator,
+                writer.getFactory().createGenerator(stream, ENCODING), 
+                writer,
                 executor);
     }
 
     public static TraceWriter create(
             JsonGenerator json,
-            TraceEventSerializer generator,
+            ObjectWriter writer,
             Executor executor) {
         return new TraceWriter(
                 json,
-                generator, 
+                writer,
                 Queues.<TraceEvent>newConcurrentLinkedQueue(),
                 LogManager.getLogger(TraceWriter.class),
                 executor);
@@ -57,20 +55,20 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     
     public static JsonEncoding ENCODING = JsonEncoding.UTF8;
     
+    protected final ObjectWriter writer;
     protected final JsonGenerator json;
-    protected final TraceEventSerializer generator;
     protected final Logger logger;
     protected final Queue<TraceEvent> mailbox;
     protected final Executor executor;
     
     public TraceWriter(
             JsonGenerator json,
-            TraceEventSerializer generator,
+            ObjectWriter writer,
             Queue<TraceEvent> mailbox,
             Logger logger, 
             Executor executor) {
+        this.writer = writer;
         this.json = json;
-        this.generator = generator;
         this.logger = logger;
         this.mailbox = mailbox;
         this.executor = executor;
@@ -103,7 +101,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
 
     @Override
     protected boolean apply(TraceEvent input) throws Exception {
-        generator.serialize(json, input);
+        writer.writeValue(json, TraceEventHeader.create(input));
         return (state() != State.TERMINATED);
     }
 
