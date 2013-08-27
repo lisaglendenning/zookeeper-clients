@@ -1,7 +1,6 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -12,13 +11,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Objects;
 
 @TraceEventType(TraceEventTag.LATENCY_MEASUREMENT_EVENT)
@@ -73,7 +68,7 @@ public final class LatencyMeasurementEvent implements TraceEvent {
         return Objects.hashCode(micros);
     }
 
-    public static class Serializer extends StdSerializer<LatencyMeasurementEvent> {
+    public static class Serializer extends ListSerializer<LatencyMeasurementEvent> {
     
         public static Serializer create() {
             return new Serializer();
@@ -84,22 +79,14 @@ public final class LatencyMeasurementEvent implements TraceEvent {
         }
     
         @Override
-        public void serialize(LatencyMeasurementEvent value, JsonGenerator json,
+        protected void serializeValue(LatencyMeasurementEvent value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
-            json.writeStartArray();
             json.writeNumber(value.micros);
-            json.writeEndArray();
-        }
-    
-        @Override
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-            throws JsonMappingException {
-            return createSchemaNode("array");
         }
     }
 
-    public static class Deserializer extends StdDeserializer<LatencyMeasurementEvent> {
+    public static class Deserializer extends ListDeserializer<LatencyMeasurementEvent> {
     
         public static Deserializer create() {
             return new Deserializer();
@@ -112,26 +99,23 @@ public final class LatencyMeasurementEvent implements TraceEvent {
         }
     
         @Override
-        public LatencyMeasurementEvent deserialize(JsonParser json,
+        protected LatencyMeasurementEvent deserializeValue(JsonParser json,
                 DeserializationContext ctxt) throws IOException,
                 JsonProcessingException {
-            if (! json.isExpectedStartArrayToken()) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.START_ARRAY.toString());
+            JsonToken token = json.getCurrentToken();
+            if (token == null) {
+                token = json.nextToken();
+                if (token == null) {
+                    return null;
+                }
             }
-            json.nextToken();
+            if (token != JsonToken.VALUE_NUMBER_INT) {
+                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+            }
             int micros = json.getIntValue();
-            json.nextToken();
-            if (json.getCurrentToken() != JsonToken.END_ARRAY) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.END_ARRAY.toString());
-            }
-            json.nextToken();
+            json.clearCurrentToken();
             LatencyMeasurementEvent value = new LatencyMeasurementEvent(micros);
             return value;
-        }
-        
-        @Override
-        public boolean isCachable() { 
-            return true; 
         }
     }
 }

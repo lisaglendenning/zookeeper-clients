@@ -71,7 +71,7 @@ public class TraceGeneratorClientModule extends ClientApplicationModule {
                 ObjectMapper mapper,
                 Configuration configuration,
                 Executor executor) throws IOException {
-            String traceFile = TraceFileConfiguration.get(configuration);
+            String traceFile = Trace.getTraceFileConfiguration(configuration);
             return TraceWriter.forFile(
                     new File(traceFile), 
                     mapper.writer(), 

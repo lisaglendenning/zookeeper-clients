@@ -7,11 +7,14 @@ import java.util.Queue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
+import com.google.common.eventbus.Subscribe;
 
 import edu.uw.zookeeper.Session;
+import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ParameterizedFactory;
 import edu.uw.zookeeper.common.Publisher;
+import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.ConnectMessage;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
@@ -66,6 +69,8 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
         this.publisher = publisher;
         this.delegate = delegate;
         this.sessionId = Session.UNINITIALIZED_ID;
+        
+        delegate.register(this);
     }
 
     @Override
@@ -125,6 +130,20 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
         try {
             publisher.unregister(handler);
         } catch (IllegalArgumentException e) {}
+    }
+    
+    @Subscribe
+    public void handleTransition(Automaton.Transition<?> event) {
+        if (event.to() == Connection.State.CONNECTION_CLOSED) {
+            try {
+                delegate.unregister(this);
+            } catch (IllegalArgumentException e) {}
+            
+            RequestSentEvent pending;
+            while ((pending = times.poll()) != null) {
+                publisher.post(LatencyEvent.timeout(sessionId, pending.request));
+            }
+        }
     }
     
     protected static class RequestSentEvent {

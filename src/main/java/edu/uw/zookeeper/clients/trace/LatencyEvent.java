@@ -1,21 +1,15 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Objects;
 
 import edu.uw.zookeeper.protocol.Operation;
@@ -24,11 +18,18 @@ import edu.uw.zookeeper.protocol.Operation;
 @JsonSerialize(using=LatencyEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
 @JsonDeserialize(using=LatencyEvent.Deserializer.class)
 public final class LatencyEvent implements TraceEvent {
+
+    public static LatencyEvent timeout(
+            long sessionId, Operation.ProtocolRequest<?> request) {
+        return new LatencyEvent(LATENCY_TIMEOUT, sessionId, request, null);
+    }
     
     public static LatencyEvent create(
             long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
         return new LatencyEvent(nanos, sessionId, request, response);
     }
+    
+    public static long LATENCY_TIMEOUT = -1L;
     
     private final long nanos;
     private final long sessionId;
@@ -93,7 +94,7 @@ public final class LatencyEvent implements TraceEvent {
         return Objects.hashCode(nanos, sessionId, request, response);
     }
 
-    public static class Serializer extends StdSerializer<LatencyEvent> {
+    public static class Serializer extends ListSerializer<LatencyEvent> {
     
         public static Serializer create() {
             return new Serializer();
@@ -104,25 +105,25 @@ public final class LatencyEvent implements TraceEvent {
         }
     
         @Override
-        public void serialize(LatencyEvent value, JsonGenerator json,
+        protected void serializeValue(LatencyEvent value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
-            json.writeStartArray();
             json.writeNumber(value.nanos);
             json.writeNumber(value.sessionId);
-            provider.findValueSerializer(value.request.getClass(), null).serialize(value.request, json, provider);
-            provider.findValueSerializer(value.response.getClass(), null).serialize(value.response, json, provider);
-            json.writeEndArray();
-        }
-    
-        @Override
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-            throws JsonMappingException {
-            return createSchemaNode("array");
+            if (value.request == null) {
+                json.writeNull();
+            } else {
+                provider.findValueSerializer(value.request.getClass(), null).serialize(value.request, json, provider);
+            }
+            if (value.response == null) {
+                json.writeNull();
+            } else {
+                provider.findValueSerializer(value.response.getClass(), null).serialize(value.response, json, provider);
+            }
         }
     }
 
-    public static class Deserializer extends StdDeserializer<LatencyEvent> {
+    public static class Deserializer extends ListDeserializer<LatencyEvent> {
     
         public static Deserializer create() {
             return new Deserializer();
@@ -135,30 +136,37 @@ public final class LatencyEvent implements TraceEvent {
         }
     
         @Override
-        public synchronized LatencyEvent deserialize(JsonParser json,
+        protected LatencyEvent deserializeValue(JsonParser json,
                 DeserializationContext ctxt) throws IOException,
-                JsonProcessingException {
-            if (! json.isExpectedStartArrayToken()) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.START_ARRAY.toString());
+                JsonProcessingException {            
+            JsonToken token = json.getCurrentToken();
+            if (token == null) {
+                token = json.nextToken();
+                if (token == null) {
+                    return null;
+                }
             }
-            json.nextToken();
+            if (token != JsonToken.VALUE_NUMBER_INT) {
+                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+            }
             long nanos = json.getLongValue();
-            json.nextToken();
-            long sessionId = json.getLongValue();
-            json.nextToken();
-            Operation.ProtocolRequest<?>request = (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
-            Operation.ProtocolResponse<?> response = (Operation.ProtocolResponse<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolResponse.class), null).deserialize(json, ctxt);
-            if (json.getCurrentToken() != JsonToken.END_ARRAY) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.END_ARRAY.toString());
+            token = json.nextToken();
+            if (token != JsonToken.VALUE_NUMBER_INT) {
+                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
             }
-            json.nextToken();
+            long sessionId = json.getLongValue();
+            json.clearCurrentToken();
+            Operation.ProtocolRequest<?>request = (token == JsonToken.VALUE_NULL) ? null : (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
+            token = json.getCurrentToken();
+            if (token == null) {
+                token = json.nextToken();
+            }
+            Operation.ProtocolResponse<?> response = (token == JsonToken.VALUE_NULL) ? null : (Operation.ProtocolResponse<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolResponse.class), null).deserialize(json, ctxt);
+            if (json.hasCurrentToken()) {
+                json.clearCurrentToken();
+            }
             LatencyEvent value = new LatencyEvent(nanos, sessionId, request, response);
             return value;
-        }
-        
-        @Override
-        public boolean isCachable() { 
-            return true; 
         }
     }
 }

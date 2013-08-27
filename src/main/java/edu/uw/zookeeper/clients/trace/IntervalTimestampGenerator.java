@@ -2,6 +2,7 @@ package edu.uw.zookeeper.clients.trace;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AbstractScheduledService;
+
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Publisher;
@@ -13,7 +14,7 @@ public class IntervalTimestampGenerator extends AbstractScheduledService {
         return new IntervalTimestampGenerator(publisher, ConfigurableTimestampInterval.get(configuration));
     }
     
-    @Configurable(arg="timestamp", key="Timestamp", value="1000 ms", help="Time")
+    @Configurable(arg="timestamp", key="Timestamp", value="500 ms", help="Time")
     public static class ConfigurableTimestampInterval implements Function<Configuration, TimeValue> {
 
         public static TimeValue get(Configuration configuration) {
@@ -48,5 +49,11 @@ public class IntervalTimestampGenerator extends AbstractScheduledService {
     @Override
     protected Scheduler scheduler() {
         return scheduler;
+    }
+    
+    @Override
+    protected void shutDown() throws Exception {
+        runOneIteration();
+        super.shutDown();
     }
 }

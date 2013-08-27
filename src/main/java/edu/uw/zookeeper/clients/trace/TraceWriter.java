@@ -2,14 +2,13 @@ package edu.uw.zookeeper.clients.trace;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Queues;
@@ -23,20 +22,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
             ObjectWriter writer,
             Executor executor) throws IOException {
         return create(
-                writer.getFactory().createGenerator(file, ENCODING), 
-                writer,
-                executor);
-    }
-    
-    /**
-     * Will not automatically close stream
-     */
-    public static TraceWriter forStream(
-            OutputStream stream,
-            ObjectWriter writer,
-            Executor executor) throws IOException {
-        return create(
-                writer.getFactory().createGenerator(stream, ENCODING), 
+                writer.getFactory().createGenerator(file, Trace.ENCODING), 
                 writer,
                 executor);
     }
@@ -52,8 +38,6 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
                 LogManager.getLogger(TraceWriter.class),
                 executor);
     }
-    
-    public static JsonEncoding ENCODING = JsonEncoding.UTF8;
     
     protected final ObjectWriter writer;
     protected final JsonGenerator json;
@@ -72,6 +56,11 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
         this.logger = logger;
         this.mailbox = mailbox;
         this.executor = executor;
+
+        try {
+            json.writeStartArray();
+        } catch (IOException e) {
+        }
     }
     
     @Override
@@ -115,6 +104,11 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
                 logger.warn("{}", next, e);
                 mailbox.clear();
             }
+        }
+        
+        try {
+            json.writeEndArray();
+        } catch (IOException e) {
         }
         
         try {

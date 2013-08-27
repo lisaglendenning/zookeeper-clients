@@ -1,20 +1,14 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -52,7 +46,7 @@ public final class TraceEventHeader extends Factories.Holder<TraceEvent> {
         super(value);
     }
 
-    public static class Serializer extends StdSerializer<TraceEventHeader> {
+    public static class Serializer extends ListSerializer<TraceEventHeader> {
     
         public static Serializer create() {
             return new Serializer();
@@ -63,25 +57,17 @@ public final class TraceEventHeader extends Factories.Holder<TraceEvent> {
         }
     
         @Override
-        public void serialize(TraceEventHeader value, JsonGenerator json,
+        protected void serializeValue(TraceEventHeader value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
             TraceEvent event = value.get();
-            json.writeStartArray();
             TraceEventTag tag = event.getTag();
             json.writeNumber(tag.ordinal());
             provider.findValueSerializer(event.getClass(), null).serialize(event, json, provider);
-            json.writeEndArray();
-        }
-    
-        @Override
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-            throws JsonMappingException {
-            return createSchemaNode("array");
         }
     }
     
-    public static class Deserializer extends StdDeserializer<TraceEventHeader> {
+    public static class Deserializer extends ListDeserializer<TraceEventHeader> {
 
         public static Deserializer create() {
             return create(types());
@@ -103,27 +89,29 @@ public final class TraceEventHeader extends Factories.Holder<TraceEvent> {
         }
         
         @Override
-        public TraceEventHeader deserialize(JsonParser json,
-                DeserializationContext ctxt) throws IOException,
-                JsonProcessingException {
-            if (! json.isExpectedStartArrayToken()) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.START_ARRAY.toString());
+        protected TraceEventHeader deserializeValue(JsonParser json,
+                DeserializationContext ctxt) throws IOException {
+            JsonToken token = json.getCurrentToken();
+            if (token == null) {
+                token = json.nextToken();
+                if (token == null) {
+                    return null;
+                }
             }
-            json.nextToken();
+            
+            if (token != JsonToken.VALUE_NUMBER_INT) {
+                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+            }
             TraceEventTag tag = EVENT_TAGS[json.getIntValue()];
-            json.nextToken();
+            json.clearCurrentToken();
+            
             Class<? extends TraceEvent> type = types.get(tag);
-            TraceEvent value = (TraceEvent) ctxt.findContextualValueDeserializer(ctxt.constructType(type), null).deserialize(json, ctxt);
-            if (json.getCurrentToken() != JsonToken.END_ARRAY) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.END_ARRAY.toString());
+            if (type == null) {
+                throw ctxt.instantiationException(TraceEventHeader.class, String.valueOf(tag));
             }
-            json.nextToken();
+            TraceEvent value = (TraceEvent) ctxt.findContextualValueDeserializer(ctxt.constructType(type), null).deserialize(json, ctxt);
+
             return new TraceEventHeader(value);
-        }
-        
-        @Override
-        public boolean isCachable() { 
-            return true; 
         }
     }
 }

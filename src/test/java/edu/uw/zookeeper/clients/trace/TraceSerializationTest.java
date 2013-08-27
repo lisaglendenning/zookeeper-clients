@@ -3,6 +3,10 @@ package edu.uw.zookeeper.clients.trace;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -36,6 +41,29 @@ public class TraceSerializationTest {
         testTraceEventHeaderSerialization(ProtocolRequestEvent.create(sessionId, ProtocolRequestMessage.of(xid, Operations.Requests.sync().build())), mapper);
         long zxid = 1;
         testTraceEventHeaderSerialization(ProtocolResponseEvent.create(sessionId, ProtocolResponseMessage.of(xid, zxid, Operations.Responses.sync().build())), mapper);
+    }
+
+    @Test
+    public void testIterator() throws IOException {
+        Injector injector = Guice.createInjector(JacksonModule.create());
+        ObjectMapper mapper = injector.getInstance(ObjectMapper.class);
+        StringWriter writer = new StringWriter();
+        int n = 10;
+        List<TraceEventHeader> events = Lists.newLinkedList();
+        for (int i=0; i<n; ++i) {
+            events.add(TraceEventHeader.create(TimestampEvent.create(i)));
+        }
+        mapper.writeValue(writer, events);
+        String encoded = writer.toString();
+        logger.debug(encoded);
+        StringReader reader = new StringReader(encoded);
+        Iterator<TraceEvent> itr = TraceEventIterator.create(
+                mapper.getFactory().createParser(reader), mapper.reader());
+        for (int i=0; i<10; ++i) {
+            assertTrue(itr.hasNext());
+            assertEquals((long) i, ((TimestampEvent) itr.next()).getTimestamp());
+        }
+        assertFalse(itr.hasNext());
     }
     
     public void testTraceEventHeaderSerialization(TraceEvent input, ObjectMapper mapper) throws IOException {

@@ -78,7 +78,7 @@ public final class ProtocolRequestEvent implements TraceEvent {
         return Objects.hashCode(sessionId, request);
     }
 
-    public static class Serializer extends StdSerializer<ProtocolRequestEvent> {
+    public static class Serializer extends ListSerializer<ProtocolRequestEvent> {
     
         public static Serializer create() {
             return new Serializer();
@@ -89,23 +89,15 @@ public final class ProtocolRequestEvent implements TraceEvent {
         }
     
         @Override
-        public void serialize(ProtocolRequestEvent value, JsonGenerator json,
+        protected void serializeValue(ProtocolRequestEvent value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
-            json.writeStartArray();
             json.writeNumber(value.sessionId);
             provider.findValueSerializer(value.request.getClass(), null).serialize(value.request, json, provider);
-            json.writeEndArray();
-        }
-    
-        @Override
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-            throws JsonMappingException {
-            return createSchemaNode("array");
         }
     }
 
-    public static class Deserializer extends StdDeserializer<ProtocolRequestEvent> {
+    public static class Deserializer extends ListDeserializer<ProtocolRequestEvent> {
     
         public static Deserializer create() {
             return new Deserializer();
@@ -118,27 +110,27 @@ public final class ProtocolRequestEvent implements TraceEvent {
         }
     
         @Override
-        public ProtocolRequestEvent deserialize(JsonParser json,
+        protected ProtocolRequestEvent deserializeValue(JsonParser json,
                 DeserializationContext ctxt) throws IOException,
-                JsonProcessingException {
-            if (! json.isExpectedStartArrayToken()) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.START_ARRAY.toString());
+                JsonProcessingException {  
+            JsonToken token = json.getCurrentToken();
+            if (token == null) {
+                token = json.nextToken();
+                if (token == null) {
+                    return null;
+                }
             }
-            json.nextToken();
+            if (token != JsonToken.VALUE_NUMBER_INT) {
+                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+            }
             long sessionId = json.getLongValue();
-            json.nextToken();
+            json.clearCurrentToken();
             Operation.ProtocolRequest<?> request = (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
-            if (json.getCurrentToken() != JsonToken.END_ARRAY) {
-                throw ctxt.wrongTokenException(json, json.getCurrentToken(), JsonToken.END_ARRAY.toString());
+            if (json.hasCurrentToken()) {
+                json.clearCurrentToken();
             }
-            json.nextToken();
             ProtocolRequestEvent value = new ProtocolRequestEvent(sessionId, request);
             return value;
-        }
-        
-        @Override
-        public boolean isCachable() { 
-            return true; 
         }
     }
 }
