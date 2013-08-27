@@ -21,8 +21,11 @@ import com.google.common.base.Objects;
 @JsonDeserialize(using=LatencyMeasurementEvent.Deserializer.class)
 public final class LatencyMeasurementEvent implements TraceEvent {
 
-    public static LatencyMeasurementEvent from(LatencyEvent event) {
-        return new LatencyMeasurementEvent((int) TimeUnit.MICROSECONDS.convert(event.getNanos(), TimeUnit.NANOSECONDS));
+    public static LatencyMeasurementEvent fromNanos(long nanos) {
+        long micros = (nanos <= 0) ? 
+                nanos : 
+                    TimeUnit.MICROSECONDS.convert(nanos, TimeUnit.NANOSECONDS);
+        return new LatencyMeasurementEvent((int) micros);
     }
 
     public static LatencyMeasurementEvent create(int micros) {

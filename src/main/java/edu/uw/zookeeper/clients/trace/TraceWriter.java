@@ -8,7 +8,6 @@ import java.util.concurrent.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Queues;
@@ -30,7 +29,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     public static TraceWriter create(
             JsonGenerator json,
             ObjectWriter writer,
-            Executor executor) {
+            Executor executor) throws IOException {
         return new TraceWriter(
                 json,
                 writer,
@@ -50,17 +49,14 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
             ObjectWriter writer,
             Queue<TraceEvent> mailbox,
             Logger logger, 
-            Executor executor) {
+            Executor executor) throws IOException {
         this.writer = writer;
         this.json = json;
         this.logger = logger;
         this.mailbox = mailbox;
         this.executor = executor;
 
-        try {
-            json.writeStartArray();
-        } catch (IOException e) {
-        }
+        json.writeStartArray();
     }
     
     @Override

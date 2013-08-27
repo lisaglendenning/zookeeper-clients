@@ -25,7 +25,7 @@ import edu.uw.zookeeper.protocol.client.AssignXidProcessor;
 import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
 import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
-public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
+public class OperationTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
     public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory(
             final Publisher publisher) {
@@ -35,21 +35,21 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
                     Publisher value) {
                 return Pair.create(Operation.Request.class, AssignXidCodec.newInstance(
                         AssignXidProcessor.newInstance(),
-                        LatencyMeasuringCodec.newInstance(publisher,
+                        OperationTracingCodec.newInstance(publisher,
                                 ClientProtocolCodec.newInstance(publisher))));
             }
         };
     }
     
-    public static LatencyMeasuringCodec newInstance(
+    public static OperationTracingCodec newInstance(
             Publisher publisher) {
         return newInstance(publisher, ClientProtocolCodec.newInstance(publisher));
     }
     
-    public static LatencyMeasuringCodec newInstance(
+    public static OperationTracingCodec newInstance(
             Publisher publisher,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
-        return new LatencyMeasuringCodec(
+        return new OperationTracingCodec(
                 publisher, 
                 Queues.<RequestSentEvent>newConcurrentLinkedQueue(), 
                 delegate);
@@ -60,7 +60,7 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
     protected final ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate;
     protected volatile long sessionId;
     
-    protected LatencyMeasuringCodec(
+    protected OperationTracingCodec(
             Publisher publisher, 
             Queue<RequestSentEvent> times,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
@@ -103,7 +103,7 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
                         if (pending.request.xid() == response.xid()) {
                             times.remove(pending);
                             long latency = System.nanoTime() - pending.nanos;
-                            LatencyEvent event = LatencyEvent.create(latency, sessionId, pending.request, response); 
+                            OperationEvent event = OperationEvent.create(latency, sessionId, pending.request, response); 
                             publisher.post(event);
                         }
                     }
@@ -141,7 +141,7 @@ public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSessio
             
             RequestSentEvent pending;
             while ((pending = times.poll()) != null) {
-                publisher.post(LatencyEvent.timeout(sessionId, pending.request));
+                publisher.post(OperationEvent.timeout(sessionId, pending.request));
             }
         }
     }

@@ -12,6 +12,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 
 import edu.uw.zookeeper.RuntimeModule;
 import edu.uw.zookeeper.client.ClientApplicationModule;
@@ -25,6 +26,7 @@ import edu.uw.zookeeper.clients.PathedRequestGenerator;
 import edu.uw.zookeeper.clients.RunnableService;
 import edu.uw.zookeeper.clients.SubmitCallable;
 import edu.uw.zookeeper.clients.common.RuntimeModuleProvider;
+import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Application;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Factory;
@@ -64,6 +66,7 @@ public class TraceGeneratorClientModule extends ClientApplicationModule {
         @Override
         protected void configure() {
             install(JacksonModule.create());
+            bind(new TypeLiteral<Actor<TraceEvent>>() {}).to(TraceWriter.class);
         }
         
         @Provides @Singleton
@@ -85,15 +88,9 @@ public class TraceGeneratorClientModule extends ClientApplicationModule {
         }
         
         @Provides @Singleton
-        public TraceEventWriterService getTraceEventWriterService(
-                TraceWriter writer, Publisher publisher) {
-            return TraceEventWriterService.newInstance(publisher, writer);
-        }
-        
-        @Provides @Singleton
-        public IntervalTimestampGenerator getIntervalTimestampGenerator(
-                Configuration configuration, Publisher publisher) {
-            return IntervalTimestampGenerator.create(publisher, configuration);
+        public TraceEventPublisherService getTraceEventWriterService(
+                Actor<TraceEvent> writer, Publisher publisher) {
+            return TraceEventPublisherService.newInstance(publisher, writer);
         }
     }
     
@@ -107,7 +104,11 @@ public class TraceGeneratorClientModule extends ClientApplicationModule {
     protected Injector createInjector(RuntimeModule runtime) {
         return Guice.createInjector(
                 RuntimeModuleProvider.create(runtime), 
-                new Module());
+                module());
+    }
+    
+    protected com.google.inject.Module module() {
+        return Module.create();
     }
 
     @Override
@@ -128,8 +129,7 @@ public class TraceGeneratorClientModule extends ClientApplicationModule {
 
     protected Runnable getRunnable() {
         ClientConnectionExecutorService<PingingClient<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> client = getClientConnectionExecutorService(getTimeOut());
-        runtime.serviceMonitor().add(injector.getInstance(TraceEventWriterService.class));
-        runtime.serviceMonitor().add(injector.getInstance(IntervalTimestampGenerator.class));
+        runtime.serviceMonitor().add(injector.getInstance(TraceEventPublisherService.class));
         final ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache = ZNodeViewCache.newInstance(client, client);
         final Generator<Records.Request> requests = getRequestGenerator(cache);
         final ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> limiting = LimitOutstandingClient.create(runtime.configuration(), cache);

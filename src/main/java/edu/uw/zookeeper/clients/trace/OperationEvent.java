@@ -14,19 +14,19 @@ import com.google.common.base.Objects;
 
 import edu.uw.zookeeper.protocol.Operation;
 
-@TraceEventType(TraceEventTag.LATENCY_EVENT)
-@JsonSerialize(using=LatencyEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
-@JsonDeserialize(using=LatencyEvent.Deserializer.class)
-public final class LatencyEvent implements TraceEvent {
+@TraceEventType(TraceEventTag.OPERATION_EVENT)
+@JsonSerialize(using=OperationEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
+@JsonDeserialize(using=OperationEvent.Deserializer.class)
+public final class OperationEvent implements TraceEvent {
 
-    public static LatencyEvent timeout(
+    public static OperationEvent timeout(
             long sessionId, Operation.ProtocolRequest<?> request) {
-        return new LatencyEvent(LATENCY_TIMEOUT, sessionId, request, null);
+        return new OperationEvent(LATENCY_TIMEOUT, sessionId, request, null);
     }
     
-    public static LatencyEvent create(
+    public static OperationEvent create(
             long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
-        return new LatencyEvent(nanos, sessionId, request, response);
+        return new OperationEvent(nanos, sessionId, request, response);
     }
     
     public static long LATENCY_TIMEOUT = -1L;
@@ -36,7 +36,7 @@ public final class LatencyEvent implements TraceEvent {
     private final Operation.ProtocolRequest<?> request;
     private final Operation.ProtocolResponse<?> response;
     
-    public LatencyEvent(long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
+    public OperationEvent(long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
         super();
         this.nanos = nanos;
         this.sessionId = sessionId;
@@ -46,7 +46,7 @@ public final class LatencyEvent implements TraceEvent {
 
     @Override
     public TraceEventTag getTag() {
-        return TraceEventTag.LATENCY_EVENT;
+        return TraceEventTag.OPERATION_EVENT;
     }
 
     public long getNanos() {
@@ -79,10 +79,10 @@ public final class LatencyEvent implements TraceEvent {
         if (this == obj) {
             return true;
         }
-        if (! (obj instanceof LatencyEvent)) {
+        if (! (obj instanceof OperationEvent)) {
             return false;
         }
-        LatencyEvent other = (LatencyEvent) obj;
+        OperationEvent other = (OperationEvent) obj;
         return (nanos == other.nanos)
                 && (sessionId == other.sessionId)
                 && request.equals(other.request)
@@ -94,18 +94,18 @@ public final class LatencyEvent implements TraceEvent {
         return Objects.hashCode(nanos, sessionId, request, response);
     }
 
-    public static class Serializer extends ListSerializer<LatencyEvent> {
+    public static class Serializer extends ListSerializer<OperationEvent> {
     
         public static Serializer create() {
             return new Serializer();
         }
         
         public Serializer() {
-            super(LatencyEvent.class);
+            super(OperationEvent.class);
         }
     
         @Override
-        protected void serializeValue(LatencyEvent value, JsonGenerator json,
+        protected void serializeValue(OperationEvent value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
             json.writeNumber(value.nanos);
@@ -123,7 +123,7 @@ public final class LatencyEvent implements TraceEvent {
         }
     }
 
-    public static class Deserializer extends ListDeserializer<LatencyEvent> {
+    public static class Deserializer extends ListDeserializer<OperationEvent> {
     
         public static Deserializer create() {
             return new Deserializer();
@@ -132,11 +132,11 @@ public final class LatencyEvent implements TraceEvent {
         private static final long serialVersionUID = 8817436001831883720L;
     
         public Deserializer() {
-            super(LatencyEvent.class);
+            super(OperationEvent.class);
         }
     
         @Override
-        protected LatencyEvent deserializeValue(JsonParser json,
+        protected OperationEvent deserializeValue(JsonParser json,
                 DeserializationContext ctxt) throws IOException,
                 JsonProcessingException {            
             JsonToken token = json.getCurrentToken();
@@ -165,7 +165,7 @@ public final class LatencyEvent implements TraceEvent {
             if (json.hasCurrentToken()) {
                 json.clearCurrentToken();
             }
-            LatencyEvent value = new LatencyEvent(nanos, sessionId, request, response);
+            OperationEvent value = new OperationEvent(nanos, sessionId, request, response);
             return value;
         }
     }

@@ -34,7 +34,7 @@ public final class TraceEventHeader extends Factories.Holder<TraceEvent> {
                 TimestampEvent.class, 
                 ProtocolRequestEvent.class, 
                 ProtocolResponseEvent.class, 
-                LatencyEvent.class, 
+                OperationEvent.class, 
                 LatencyMeasurementEvent.class);
         for (Class<? extends TraceEvent> type: types) {
             builder.put(type.getAnnotation(TraceEventType.class).value(), type);

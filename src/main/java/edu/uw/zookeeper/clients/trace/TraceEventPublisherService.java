@@ -3,22 +3,23 @@ package edu.uw.zookeeper.clients.trace;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Publisher;
 
-public class TraceEventWriterService extends AbstractIdleService {
+public class TraceEventPublisherService extends AbstractIdleService {
 
-    public static TraceEventWriterService newInstance(
+    public static TraceEventPublisherService newInstance(
             Publisher publisher,
-            TraceWriter writer) {
-        return new TraceEventWriterService(publisher, writer);
+            Actor<? super TraceEvent> writer) {
+        return new TraceEventPublisherService(publisher, writer);
     }
     
     protected final Publisher publisher;
-    protected final TraceWriter writer; 
+    protected final Actor<? super TraceEvent> writer; 
     
-    public TraceEventWriterService(
+    public TraceEventPublisherService(
             Publisher publisher,
-            TraceWriter writer) {
+            Actor<? super TraceEvent> writer) {
         this.publisher = publisher;
         this.writer = writer;
     }
@@ -31,10 +32,12 @@ public class TraceEventWriterService extends AbstractIdleService {
     @Override
     protected void startUp() throws Exception {
         publisher.register(this);
+        publisher.post(TimestampEvent.currentTimeMillis());
     }
 
     @Override
     protected void shutDown() throws Exception {
+        publisher.post(TimestampEvent.currentTimeMillis());
         publisher.unregister(this);
         writer.stop();
     }
