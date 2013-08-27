@@ -20,14 +20,16 @@ import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
 
 public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
-    public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory() {
+    public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory(
+            final Publisher publisher) {
         return new ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>>() {
             @Override
             public Pair<Class<Operation.Request>, AssignXidCodec> get(
                     Publisher value) {
                 return Pair.create(Operation.Request.class, AssignXidCodec.newInstance(
                         AssignXidProcessor.newInstance(),
-                        ProtocolTracingCodec.newInstance(value)));
+                        ProtocolTracingCodec.newInstance(publisher,
+                                ClientProtocolCodec.newInstance(value))));
             }
         };
     }

@@ -15,13 +15,8 @@ import com.google.inject.Singleton;
 
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestDeserializer;
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestSerializer;
-import edu.uw.zookeeper.jackson.databind.RequestRecordDeserializer;
-import edu.uw.zookeeper.jackson.databind.RequestRecordSerializer;
-import edu.uw.zookeeper.jackson.databind.ResponseRecordDeserializer;
-import edu.uw.zookeeper.jackson.databind.ResponseRecordSerializer;
 import edu.uw.zookeeper.jackson.databind.Version;
 import edu.uw.zookeeper.protocol.Operation;
-import edu.uw.zookeeper.protocol.proto.Records;
 
 public class JacksonModule extends AbstractModule {
 
@@ -43,14 +38,10 @@ public class JacksonModule extends AbstractModule {
     @Provides @Singleton
     public ObjectMapper getObjectMapper() {
         List<JsonSerializer<?>> serializers = ImmutableList.<JsonSerializer<?>>of(
-                RequestRecordSerializer.create(),
-                ResponseRecordSerializer.create(),
                 ProtocolRequestSerializer.create(),
                 ProtocolResponseHeaderSerializer.create(),
                 TraceEventHeader.serializer());
         Map<Class<?>, JsonDeserializer<?>> deserializers = ImmutableMap.<Class<?>, JsonDeserializer<?>>of(
-                Records.Request.class, RequestRecordDeserializer.create(),
-                Records.Response.class, ResponseRecordDeserializer.create(),
                 Operation.ProtocolRequest.class, ProtocolRequestDeserializer.create(),
                 Operation.ProtocolResponse.class, ProtocolResponseHeaderDeserializer.create(),
                 TraceEventHeader.class, TraceEventHeader.deserializer());

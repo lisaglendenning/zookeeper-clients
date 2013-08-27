@@ -24,14 +24,16 @@ import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
 public class LatencyMeasuringCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
-    public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory() {
+    public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory(
+            final Publisher publisher) {
         return new ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>>() {
             @Override
             public Pair<Class<Operation.Request>, AssignXidCodec> get(
                     Publisher value) {
                 return Pair.create(Operation.Request.class, AssignXidCodec.newInstance(
                         AssignXidProcessor.newInstance(),
-                        LatencyMeasuringCodec.newInstance(value)));
+                        LatencyMeasuringCodec.newInstance(publisher,
+                                ClientProtocolCodec.newInstance(publisher))));
             }
         };
     }
