@@ -45,7 +45,7 @@ public class TraceIteratorClientModule extends TraceClientModule {
         public Iterator<Records.Request> getRequests(
                 Configuration configuration,
                 ObjectMapper mapper) throws IOException {
-            File file = new File(Trace.getTraceInputFileConfiguration(configuration));
+            File file = Trace.getTraceInputFileConfiguration(configuration);
             logger.info("Trace input: {}", file);
             Iterator<TraceEvent> events = TraceEventIterator.forFile(file, mapper.reader());
             return TraceRequestIterator.requestsOf(TraceRequestIterator.from(events));

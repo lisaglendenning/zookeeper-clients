@@ -51,7 +51,7 @@ public abstract class TraceClientModule extends ClientApplicationModule {
                 Configuration configuration,
                 ObjectMapper mapper,
                 Executor executor) throws IOException {
-            File file = new File(Trace.getTraceOutputFileConfiguration(configuration));
+            File file = Trace.getTraceOutputFileConfiguration(configuration);
             logger.info("Trace output: {}", file);
             return TraceWriter.forFile(
                     file, 

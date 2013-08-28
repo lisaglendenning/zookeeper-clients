@@ -2,7 +2,6 @@ package edu.uw.zookeeper.clients.trace;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -14,7 +13,7 @@ import com.google.common.collect.AbstractIterator;
 
 public class TraceEventIterator extends AbstractIterator<TraceEvent> {
 
-    public static Iterator<TraceEvent> forFile(
+    public static TraceEventIterator forFile(
             File file,
             ObjectReader reader) throws IOException {
         return create(
@@ -22,7 +21,7 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
                 reader);
     }
     
-    public static Iterator<TraceEvent> create(
+    public static TraceEventIterator create(
             JsonParser json,
             ObjectReader reader) throws JsonProcessingException, IOException {
         return new TraceEventIterator(json, reader);
