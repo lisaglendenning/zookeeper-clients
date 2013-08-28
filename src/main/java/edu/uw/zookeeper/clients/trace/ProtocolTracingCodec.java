@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 
 import com.google.common.base.Optional;
+
 import edu.uw.zookeeper.Session;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ParameterizedFactory;
@@ -64,8 +65,18 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
         delegate.encode(message, output);
         if (sessionId != Session.UNINITIALIZED_ID) {
             Message.ClientRequest<?> request = (Message.ClientRequest<?>) message;
-            ProtocolRequestEvent event = ProtocolRequestEvent.create(sessionId, request);
-            publisher.post(event);
+            switch (request.record().opcode()) {
+                case PING:
+                case AUTH:
+                case SET_WATCHES:
+                    break;
+                default:
+                {
+                    ProtocolRequestEvent event = ProtocolRequestEvent.create(sessionId, request);
+                    publisher.post(event);
+                    break;
+                }
+            }
         } else {
             if (! (message instanceof ConnectMessage.Request)) {
                 throw new IllegalStateException();
@@ -83,8 +94,18 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
                 sessionId = response.getSessionId();
             } else {
                 Message.ServerResponse<?> response = (Message.ServerResponse<?>) output.get();
-                ProtocolResponseEvent event = ProtocolResponseEvent.create(sessionId, response);
-                publisher.post(event);
+                switch (response.record().opcode()) {
+                    case PING:
+                    case AUTH:
+                    case SET_WATCHES:
+                        break;
+                    default:
+                    {
+                        ProtocolResponseEvent event = ProtocolResponseEvent.create(sessionId, response);
+                        publisher.post(event);
+                        break;
+                    }
+                }
             }
         }
         return output;
