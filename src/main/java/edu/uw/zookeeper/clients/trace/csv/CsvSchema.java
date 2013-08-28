@@ -22,20 +22,28 @@ public class CsvSchema implements Appender<Writer> {
     public static class Builder {
 
         public static Builder defaults() {
-            return new Builder(ImmutableList.<CsvColumn>of(), Optional.<Function<? super CsvColumn, String>>absent(), StringDelimiter.forString(COMMA), StringDelimiter.forString(NEWLINE));
+            return new Builder(
+                    ImmutableList.<CsvColumn>of(), 
+                    Optional.of(
+                            Functions.compose(
+                                    QuoteString.quoteAll(),
+                                    columnNameFormatter())), 
+                    StringDelimiter.forString(COMMA), 
+                    StringDelimiter.forString(NEWLINE));
         }
         
         public static final String NEWLINE = "\n";
         public static final String COMMA = ",";
+        public static final String TAB = "\t";
 
         protected final ImmutableList<CsvColumn> columns;
-        protected final Optional<Function<? super CsvColumn, String>> columnFormatter;
+        protected final Optional<? extends Function<? super CsvColumn, String>> columnFormatter;
         protected final Delimiter delimitColumn;
         protected final Delimiter delimitRecord;
         
         public Builder(
                 ImmutableList<CsvColumn> columns,
-                Optional<Function<? super CsvColumn, String>> columnFormatter,
+                Optional<? extends Function<? super CsvColumn, String>> columnFormatter,
                 Delimiter delimitColumn,
                 Delimiter delimitRecord) {
             this.columns = columns;
@@ -72,6 +80,15 @@ public class CsvSchema implements Appender<Writer> {
     public static Function<Object, String> forFormat(String format) {
         return FormatStringFormatter.forFormat(format);
     }
+
+    public static Function<CsvColumn, String> columnNameFormatter() {
+        return new Function<CsvColumn, String>() {
+            @Override
+            public String apply(CsvColumn input) {
+                return input.getName();
+            }
+        };
+    }
     
     public static class FormatStringFormatter implements Function<Object, String> {
 
@@ -91,14 +108,29 @@ public class CsvSchema implements Appender<Writer> {
         }
     }
     
+    public static class QuoteString implements Function<String, String> {
+        
+        public static QuoteString quoteAll() {
+            return new QuoteString();
+        }
+        
+        @Override
+        public String apply(String input) {
+            return new StringBuilder()
+                .append('"')
+                .append(input)
+                .append('"').toString();
+        }
+    }
+    
     protected final ImmutableList<CsvColumn> columns;
     protected final Delimiter delimitColumn;
     protected final Delimiter delimitRecord;
-    protected final Optional<Function<? super CsvColumn, String>> columnFormatter;
+    protected final Optional<? extends Function<? super CsvColumn, String>> columnFormatter;
     
     public CsvSchema(
             ImmutableList<CsvColumn> columns,
-            Optional<Function<? super CsvColumn, String>> columnFormatter,
+            Optional<? extends Function<? super CsvColumn, String>> columnFormatter,
             Delimiter delimitColumn,
             Delimiter delimitRecord) {
         this.columns = checkNotNull(columns);

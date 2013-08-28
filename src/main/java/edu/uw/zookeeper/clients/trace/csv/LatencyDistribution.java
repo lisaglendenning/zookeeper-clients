@@ -35,7 +35,7 @@ public class LatencyDistribution {
 
     public static ImmutableList<CsvColumn> columns() {
         return ImmutableList.of(CsvColumn.create(
-                CsvFieldType.FIELD_FLOAT, "milliseconds", CsvSchema.forFormat("%04.3f")));
+                CsvFieldType.FIELD_FLOAT, "Latency (ms)", CsvSchema.forFormat("%04.3f")));
     }
     
     public static Iterator<ImmutableList<Float>> fromEvents(Iterator<TraceEvent> events) {
