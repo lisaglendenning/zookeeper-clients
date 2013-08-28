@@ -28,8 +28,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
                 random, opcodes, paths, labels, datum, cache);
     }
     
-    protected static final ImmutableList<OpCode> BASIC_OPCODES = ImmutableList.of( 
-            OpCode.CHECK, 
+    protected static final ImmutableList<OpCode> BASIC_OPCODES = ImmutableList.of(
             OpCode.CREATE,
             OpCode.GET_CHILDREN,
             OpCode.DELETE, 
@@ -62,7 +61,10 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
     
     @Override
     public synchronized Records.Request next() {
-        ZNodeLabel.Path path = paths.next();
+        ZNodeLabel.Path path;
+        do {
+            path = paths.next();
+        } while (ZNodeLabel.Path.zookeeper().prefixOf(path));
         ZNodeViewCache.NodeCache<?> node = cache.trie().get(path);
         while (node == null) {
             path = paths.next();
