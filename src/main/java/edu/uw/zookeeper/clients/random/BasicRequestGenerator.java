@@ -5,8 +5,6 @@ import java.util.Random;
 import com.google.common.collect.ImmutableList;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
-import edu.uw.zookeeper.client.ZNodeViewCache.NodeCache;
-import edu.uw.zookeeper.client.ZNodeViewCache.View;
 import edu.uw.zookeeper.clients.CachedPaths;
 import edu.uw.zookeeper.clients.Generator;
 import edu.uw.zookeeper.data.CreateMode;

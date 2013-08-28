@@ -8,6 +8,8 @@ import com.google.inject.Singleton;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.RuntimeModule;
+import edu.uw.zookeeper.clients.Generator;
+import edu.uw.zookeeper.clients.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Application;
 import edu.uw.zookeeper.common.Configurable;
@@ -17,8 +19,9 @@ import edu.uw.zookeeper.common.ParameterizedFactory;
 import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
+import edu.uw.zookeeper.protocol.proto.Records;
 
-public class MeasuringClientModule extends TraceGeneratorClientModule {
+public class MeasuringClientModule extends TraceWriterClientModule {
 
     public static ParameterizedFactory<RuntimeModule, Application> factory() {
         return new ParameterizedFactory<RuntimeModule, Application>() {
@@ -65,11 +68,7 @@ public class MeasuringClientModule extends TraceGeneratorClientModule {
         }
     }
     
-    public static class Module extends TraceGeneratorClientModule.Module {
-
-        public static Module create() {
-            return new Module();
-        }
+    public class Module extends TraceWriterClientModule.Module {
 
         @Override
         protected void configure() {
@@ -114,7 +113,12 @@ public class MeasuringClientModule extends TraceGeneratorClientModule {
     
     @Override
     protected com.google.inject.Module module() {
-        return Module.create();
+        return new Module();
+    }
+
+    @Override
+    protected Generator<Records.Request> getRequestGenerator() {
+        return PathedRequestGenerator.create(getCache());
     }
 
     @Override
