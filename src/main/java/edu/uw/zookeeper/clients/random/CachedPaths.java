@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients;
+package edu.uw.zookeeper.clients.random;
 
 import java.util.List;
 import java.util.Random;
@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.Subscribe;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.ZNodeLabel;
 
 public class CachedPaths implements Generator<ZNodeLabel.Path> {

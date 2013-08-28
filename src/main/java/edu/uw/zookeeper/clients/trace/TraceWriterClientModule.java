@@ -1,10 +1,5 @@
 package edu.uw.zookeeper.clients.trace;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Executor;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -19,15 +14,12 @@ import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.client.TreeFetcher;
 import edu.uw.zookeeper.client.ZNodeViewCache;
-import edu.uw.zookeeper.clients.CallUntilPresent;
-import edu.uw.zookeeper.clients.Generator;
-import edu.uw.zookeeper.clients.IterationCallable;
-import edu.uw.zookeeper.clients.RunnableService;
-import edu.uw.zookeeper.clients.SubmitCallable;
-import edu.uw.zookeeper.common.Actor;
-import edu.uw.zookeeper.common.Factory;
+import edu.uw.zookeeper.clients.common.CallUntilPresent;
+import edu.uw.zookeeper.clients.common.Generator;
+import edu.uw.zookeeper.clients.common.IterationCallable;
+import edu.uw.zookeeper.clients.common.SubmitCallable;
+import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Pair;
-import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.common.ServiceMonitor;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.net.Connection;
@@ -38,44 +30,10 @@ import edu.uw.zookeeper.protocol.client.AssignXidCodec;
 import edu.uw.zookeeper.protocol.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.protocol.proto.Records;
 
-public abstract class TraceWriterClientModule extends TraceClientModule {
+public class TraceWriterClientModule extends TraceClientModule {
 
     public class Module extends TraceClientModule.Module {
 
-        @Override
-        protected void configure() {
-            super.configure();
-            bind(new TypeLiteral<Actor<TraceEvent>>() {}).to(TraceWriter.class);
-        }
-        
-        @Provides @Singleton
-        public TraceWriter getTraceWriter(
-                File traceFile,
-                ObjectMapper mapper,
-                Executor executor) throws IOException {
-            return TraceWriter.forFile(
-                    traceFile, 
-                    mapper.writer(), 
-                    executor);
-        }
-        
-        @Provides @Singleton
-        public Publisher getTracePublisher(
-                Factory<? extends Publisher> publishers) {
-            return publishers.get();
-        }
-        
-        @Provides @Singleton
-        public TraceEventPublisherService getTraceEventWriterService(
-                Actor<TraceEvent> writer, Publisher publisher) {
-            return TraceEventPublisherService.newInstance(publisher, writer);
-        }
-
-        @Provides @Singleton
-        public ClientConnectionExecutorService<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> getClientConnectionExecutorService() {
-            return TraceWriterClientModule.this.getClientConnectionExecutorService(getTimeOut());
-        }
-        
         @Provides @Singleton
         public ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache(
                 ClientConnectionExecutorService<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> client,
@@ -116,12 +74,6 @@ public abstract class TraceWriterClientModule extends TraceClientModule {
     }
 
     @Override
-    protected ServiceMonitor createServices() {
-        runtime.serviceMonitor().add(
-                RunnableService.create(getRunnable()));
-        return runtime.serviceMonitor();
-    }
-    
     protected Runnable getRunnable() {
         final CallUntilPresent<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> callable = 
                     CallUntilPresent.create(
@@ -140,15 +92,18 @@ public abstract class TraceWriterClientModule extends TraceClientModule {
         };
     }
 
-    protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache() {
-        return injector.getInstance(Key.get(new TypeLiteral<ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>>>() {}));
-    }
-
+    @Override
     protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getClient() {
         return LimitOutstandingClient.create(
                 runtime.configuration(), 
                 getCache());
     }
-    
-    protected abstract Generator<Records.Request> getRequestGenerator();
+
+    protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache() {
+        return injector.getInstance(Key.get(new TypeLiteral<ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>>>() {}));
+    }
+
+    protected Generator<Records.Request> getRequestGenerator() {
+        return PathedRequestGenerator.create(getCache());
+    }
 }

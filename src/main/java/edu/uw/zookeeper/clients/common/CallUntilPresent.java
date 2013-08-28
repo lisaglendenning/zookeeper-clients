@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients;
+package edu.uw.zookeeper.clients.common;
 
 import java.util.concurrent.Callable;
 

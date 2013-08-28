@@ -3,7 +3,7 @@ package edu.uw.zookeeper.clients.random;
 import java.util.List;
 import java.util.Random;
 
-import edu.uw.zookeeper.clients.Generator;
+import edu.uw.zookeeper.clients.common.Generator;
 
 public abstract class RandomFromList<E> implements Generator<E> {
 

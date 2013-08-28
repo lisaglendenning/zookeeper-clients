@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients;
+package edu.uw.zookeeper.clients.common;
 
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 

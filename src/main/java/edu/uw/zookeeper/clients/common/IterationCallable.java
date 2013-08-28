@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients;
+package edu.uw.zookeeper.clients.common;
 
 import static com.google.common.base.Preconditions.*;
 

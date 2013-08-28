@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.*;
 
 import java.util.Random;
 
-import edu.uw.zookeeper.clients.Generator;
+import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.ZNodeLabel;
 
 public class RandomLabel implements Generator<ZNodeLabel.Component> {

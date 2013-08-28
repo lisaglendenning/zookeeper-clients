@@ -5,8 +5,7 @@ import java.util.Random;
 import com.google.common.collect.ImmutableList;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
-import edu.uw.zookeeper.clients.CachedPaths;
-import edu.uw.zookeeper.clients.Generator;
+import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.CreateMode;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.StampedReference;

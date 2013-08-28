@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.*;
 
 import java.util.Random;
 
-import edu.uw.zookeeper.clients.Generator;
+import edu.uw.zookeeper.clients.common.Generator;
 
 public class RandomData implements Generator<byte[]> {
 

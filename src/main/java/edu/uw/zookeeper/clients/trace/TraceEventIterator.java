@@ -52,6 +52,7 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
             try {
                 JsonToken next = json.nextToken();
                 if ((next == null) || (next == JsonToken.END_ARRAY)) {
+                    json.close();
                     return endOfData();
                 }
             } catch (IOException e) {

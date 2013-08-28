@@ -1,8 +1,9 @@
-package edu.uw.zookeeper.clients;
+package edu.uw.zookeeper.clients.random;
 
 import java.util.Random;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.proto.Records;

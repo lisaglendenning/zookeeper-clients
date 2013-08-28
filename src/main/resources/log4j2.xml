@@ -6,7 +6,7 @@
     </Console>
   </appenders>
   <loggers>
-    <logger name="edu.uw.zookeeper" level="warn">
+    <logger name="edu.uw.zookeeper" level="info">
     </logger>
     <logger name="io.netty" level="warn">
     </logger>
