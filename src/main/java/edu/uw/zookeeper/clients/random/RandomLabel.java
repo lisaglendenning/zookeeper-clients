@@ -40,15 +40,19 @@ public class RandomLabel implements Generator<ZNodeLabel.Component> {
     
     @Override
     public ZNodeLabel.Component next() {
-        ZNodeLabel.Component component;
+        ZNodeLabel.Component component = null;
         do {
             int length = random.nextInt(lengthRange) + minLength;
             char[] chars = new char[length];
             for (int i=0; i<length; ++i) {
                 chars[i] = alphabet[random.nextInt(alphabet.length)];
             }
-            component = ZNodeLabel.Component.of(String.valueOf(chars));
-        } while (component.isReserved());
+            try {
+                component = ZNodeLabel.Component.of(String.valueOf(chars));
+            } catch (IllegalArgumentException e) {
+                component = null;
+            }
+        } while ((component == null) || component.isReserved());
         return component;
     }
 }
