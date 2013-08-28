@@ -22,7 +22,7 @@ public class LatencyDistribution {
     
     public static void eventsToCsvFile(
             CsvSchema.Builder schema, File output, Iterator<TraceEvent> events) throws IOException {
-        CsvWriter writer = CsvWriter.forFile(
+        CsvAppender writer = CsvAppender.forFile(
                 output, 
                 schema.withColumns(columns()).build());
         Iterator<ImmutableList<Float>> records = fromEvents(events);
@@ -40,12 +40,12 @@ public class LatencyDistribution {
     
     public static Iterator<ImmutableList<Float>> fromEvents(Iterator<TraceEvent> events) {
         return toRecords(
-                filterTimeouts(
+                bound(
                         Iterators.filter(
                                 events, LatencyMeasurementEvent.class)));
     }
     
-    public static Iterator<LatencyMeasurementEvent> filterTimeouts(
+    public static Iterator<LatencyMeasurementEvent> bound(
             Iterator<LatencyMeasurementEvent> events) {
         return Iterators.filter(
                 events,

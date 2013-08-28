@@ -137,6 +137,16 @@ public class Main extends AbstractModule {
             } catch (IOException e) {
                 throw Throwables.propagate(e);
             }
+
+            try {
+                TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
+                ThroughputTimeSeries.eventsToCsvFile(
+                        schema, 
+                        ThroughputTimeSeries.toFile(outputPath, filePrefix), 
+                        events);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
         }
     }
 }
