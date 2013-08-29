@@ -19,20 +19,24 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     public static TraceWriter forFile(
             File file,
             ObjectWriter writer,
+            TraceHeader header,
             Executor executor) throws IOException {
         return create(
                 writer.getFactory().createGenerator(file, Trace.ENCODING), 
                 writer,
+                header,
                 executor);
     }
 
     public static TraceWriter create(
             JsonGenerator json,
             ObjectWriter writer,
+            TraceHeader header,
             Executor executor) throws IOException {
         return new TraceWriter(
                 json,
                 writer,
+                header,
                 Queues.<TraceEvent>newConcurrentLinkedQueue(),
                 LogManager.getLogger(TraceWriter.class),
                 executor);
@@ -43,20 +47,29 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     protected final Logger logger;
     protected final Queue<TraceEvent> mailbox;
     protected final Executor executor;
+    protected final TraceHeader header;
     
     public TraceWriter(
             JsonGenerator json,
             ObjectWriter writer,
+            TraceHeader header,
             Queue<TraceEvent> mailbox,
             Logger logger, 
             Executor executor) throws IOException {
         this.writer = writer;
         this.json = json;
+        this.header = header;
         this.logger = logger;
         this.mailbox = mailbox;
         this.executor = executor;
 
         json.writeStartArray();
+        writer.writeValue(json, header);
+        json.writeStartArray();
+    }
+    
+    public TraceHeader header() {
+        return header;
     }
     
     @Override
@@ -103,6 +116,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
         }
         
         try {
+            json.writeEndArray();
             json.writeEndArray();
         } catch (IOException e) {
         }

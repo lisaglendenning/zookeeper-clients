@@ -102,7 +102,7 @@ public class Main extends AbstractModule {
         }
     }
 
-    @Configurable(arg="latency", key="LatencySeries", value="true", type=ConfigValueType.BOOLEAN)
+    @Configurable(arg="latencies", key="LatencySeries", value="true", type=ConfigValueType.BOOLEAN)
     public static class LatencySeriesConfiguration implements Function<Configuration, Boolean> {
 
         public static Boolean get(Configuration configuration) {

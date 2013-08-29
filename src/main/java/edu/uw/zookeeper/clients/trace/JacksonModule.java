@@ -6,6 +6,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -47,6 +48,7 @@ public class JacksonModule extends AbstractModule {
                 TraceEventHeader.class, TraceEventHeader.deserializer());
         SimpleModule module = new SimpleModule(Version.PROJECT_NAME, PROJECT_VERSION, deserializers, serializers);
         ObjectMapper instance = new ObjectMapper();
+        instance.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         instance.registerModule(module);
         return instance;
     }

@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -15,6 +16,8 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.RuntimeModule;
 import edu.uw.zookeeper.client.ClientApplicationModule;
@@ -23,6 +26,7 @@ import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.common.RunnableService;
 import edu.uw.zookeeper.clients.common.RuntimeModuleProvider;
 import edu.uw.zookeeper.common.Actor;
+import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.Pair;
@@ -47,15 +51,22 @@ public abstract class TraceClientModule extends ClientApplicationModule {
         }
 
         @Provides @Singleton
+        public TraceHeader getTraceHeader(Configuration configuration) {
+            return TraceClientModule.this.getTraceHeader(configuration);
+        }
+        
+        @Provides @Singleton
         public TraceWriter getTraceWriter(
                 Configuration configuration,
                 ObjectMapper mapper,
+                TraceHeader header,
                 Executor executor) throws IOException {
             File file = Trace.getTraceOutputFileConfiguration(configuration);
             logger.info("Trace output: {}", file);
             return TraceWriter.forFile(
                     file, 
-                    mapper.writer(), 
+                    mapper.writer(),
+                    header,
                     executor);
         }
 
@@ -74,6 +85,26 @@ public abstract class TraceClientModule extends ClientApplicationModule {
         @Provides @Singleton
         public ClientConnectionExecutorService<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> getClientConnectionExecutorService() {
             return TraceClientModule.this.getClientConnectionExecutorService(getTimeOut());
+        }
+    }
+    
+    @Configurable(arg="description", path="Trace", key="Description", help="Description", type=ConfigValueType.STRING)
+    public static class TraceDescriptionConfiguration implements Function<Configuration, String> {
+
+        public static String get(Configuration configuration) {
+            return new TraceDescriptionConfiguration().apply(configuration);
+        }
+
+        @Override
+        public String apply(Configuration configuration) {
+            Configurable configurable = getClass().getAnnotation(Configurable.class);
+            Config config = configuration.withConfigurable(configurable)
+                    .getConfigOrEmpty(configurable.path());
+            if (config.hasPath(configurable.key())) {
+                return config.getString(configurable.key());
+            } else {
+                return "";
+            }
         }
     }
     
@@ -115,6 +146,14 @@ public abstract class TraceClientModule extends ClientApplicationModule {
     @Override
     protected ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> getCodecFactory() {
         return ProtocolTracingCodec.factory(injector.getInstance(Publisher.class));
+    }
+    
+    protected TraceHeader getTraceHeader(Configuration configuration) {
+        return TraceHeader.create(
+                TraceDescriptionConfiguration.get(configuration), 
+                TraceEventTag.TIMESTAMP_EVENT, 
+                TraceEventTag.PROTOCOL_REQUEST_EVENT, 
+                TraceEventTag.PROTOCOL_RESPONSE_EVENT);
     }
     
     protected abstract Runnable getRunnable();

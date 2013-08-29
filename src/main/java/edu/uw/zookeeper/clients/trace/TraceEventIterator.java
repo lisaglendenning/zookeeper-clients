@@ -29,6 +29,7 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
     
     protected final JsonParser json;
     protected final ObjectReader reader;
+    protected final TraceHeader header;
     
     public TraceEventIterator(
             JsonParser json,
@@ -42,7 +43,17 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
         if (! json.isExpectedStartArrayToken()) {
             throw new IllegalArgumentException(String.valueOf(json.getCurrentLocation()));
         }
+        json.nextToken();
+        this.header = reader.readValue(json, TraceHeader.class);
+        json.nextToken();
+        if (! json.isExpectedStartArrayToken()) {
+            throw new IllegalArgumentException(String.valueOf(json.getCurrentLocation()));
+        }
         json.clearCurrentToken();
+    }
+    
+    public TraceHeader header() {
+        return header;
     }
     
     @Override

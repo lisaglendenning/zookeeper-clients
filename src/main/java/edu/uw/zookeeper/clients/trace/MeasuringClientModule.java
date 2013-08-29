@@ -1,10 +1,13 @@
 package edu.uw.zookeeper.clients.trace;
 
+import java.util.Set;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.internal.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.RuntimeModule;
@@ -71,33 +74,25 @@ public class MeasuringClientModule extends TraceWriterClientModule {
         protected void configure() {
             install(JacksonModule.create());
         }
-        
+
         @Provides @Singleton
         public Actor<TraceEvent> getTraceEventActor(
                 Configuration configuration,
                 TraceWriter writer) {
-            boolean measureLatency = MeasureLatencyConfiguration.get(configuration);
-            boolean measureThroughput = MeasureThroughputConfiguration.get(configuration);
+            final Set<TraceEventTag> types = writer.header().getTypes();
             Predicate<TraceEvent> filter = new Predicate<TraceEvent>() {
                 @Override
                 public boolean apply(TraceEvent input) {
-                    switch (input.getTag()) {
-                    case TIMESTAMP_EVENT:
-                    case LATENCY_MEASUREMENT_EVENT:
-                    case THROUGHPUT_MEASUREMENT_EVENT:
-                        return true;
-                    default:
-                        return false;
-                    }
+                    return types.contains(input.getTag());
                 }
             };
             
             Actor<TraceEvent> actor = FilteringTraceEventActor.create(
                     filter, writer);
-            if (measureLatency) {
+            if (types.contains(TraceEventTag.LATENCY_MEASUREMENT_EVENT)) {
                 actor = LatencyMeasuringActor.create(actor);
             }
-            if (measureThroughput) {
+            if (types.contains(TraceEventTag.THROUGHPUT_MEASUREMENT_EVENT)) {
                 actor = ThroughputMeasuringActor.create(configuration, actor);
             }
             return actor;
@@ -116,5 +111,23 @@ public class MeasuringClientModule extends TraceWriterClientModule {
     @Override
     protected ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> getCodecFactory() {
         return OperationTracingCodec.factory(injector.getInstance(Publisher.class));
+    }
+
+    @Override
+    protected TraceHeader getTraceHeader(Configuration configuration) {
+        ImmutableSet.Builder<TraceEventTag> types = ImmutableSet.builder();
+        types.add(TraceEventTag.TIMESTAMP_EVENT);
+        if (MeasureLatencyConfiguration.get(configuration)) {
+            types.add(TraceEventTag.LATENCY_MEASUREMENT_EVENT);
+        }
+        if (MeasureThroughputConfiguration.get(configuration)) {
+            types.add(TraceEventTag.THROUGHPUT_MEASUREMENT_EVENT);
+        }
+        if (types.build().size() == 1) {
+            types.add(TraceEventTag.OPERATION_EVENT);
+        }
+        return TraceHeader.create(
+                TraceDescriptionConfiguration.get(configuration), 
+                types.build());
     }
 }

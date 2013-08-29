@@ -5,17 +5,15 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -47,18 +45,23 @@ public class TraceSerializationTest {
     public void testIterator() throws IOException {
         Injector injector = Guice.createInjector(JacksonModule.create());
         ObjectMapper mapper = injector.getInstance(ObjectMapper.class);
-        StringWriter writer = new StringWriter();
+        StringWriter w = new StringWriter();
+        JsonGenerator generator = mapper.getFactory().createGenerator(w);
+        TraceHeader header = TraceHeader.create("", TraceEventTag.TIMESTAMP_EVENT);
+        TraceWriter writer = TraceWriter.create(generator, mapper.writer(), header, MoreExecutors.sameThreadExecutor());
         int n = 10;
-        List<TraceEventHeader> events = Lists.newLinkedList();
         for (int i=0; i<n; ++i) {
-            events.add(TraceEventHeader.create(TimestampEvent.create(i)));
+            writer.send(TimestampEvent.create(i));
         }
-        mapper.writeValue(writer, events);
-        String encoded = writer.toString();
+        writer.stop();
+        String encoded = w.toString();
+        
         logger.debug(encoded);
+        
         StringReader reader = new StringReader(encoded);
-        Iterator<TraceEvent> itr = TraceEventIterator.create(
+        TraceEventIterator itr = TraceEventIterator.create(
                 mapper.getFactory().createParser(reader), mapper.reader());
+        assertEquals(header, itr.header());
         for (int i=0; i<10; ++i) {
             assertTrue(itr.hasNext());
             assertEquals((long) i, ((TimestampEvent) itr.next()).getTimestamp());
