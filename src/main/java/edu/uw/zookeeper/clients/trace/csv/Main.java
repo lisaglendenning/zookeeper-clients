@@ -130,9 +130,9 @@ public class Main extends AbstractModule {
 
             try {
                 TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
-                LatencyDistribution.eventsToCsvFile(
+                LatencySeries.eventsToCsvFile(
                         schema, 
-                        LatencyDistribution.toFile(outputPath, filePrefix), 
+                        LatencySeries.toFile(outputPath, filePrefix), 
                         events);
             } catch (IOException e) {
                 throw Throwables.propagate(e);
@@ -140,9 +140,9 @@ public class Main extends AbstractModule {
 
             try {
                 TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
-                ThroughputTimeSeries.eventsToCsvFile(
+                OperationsTimeSeries.eventsToCsvFile(
                         schema, 
-                        ThroughputTimeSeries.toFile(outputPath, filePrefix), 
+                        OperationsTimeSeries.toFile(outputPath, filePrefix), 
                         events);
             } catch (IOException e) {
                 throw Throwables.propagate(e);
