@@ -3,7 +3,9 @@ package edu.uw.zookeeper.clients.common;
 import static com.google.common.base.Preconditions.*;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -17,21 +19,26 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
     public static <V> IterationCallable<V> create(
             Configuration configuration,
             Callable<V> callable) {
-        return create(ConfigurableIterations.get(configuration), callable);
+        int iterations = ConfigurableIterations.get(configuration);
+        int logIterations = ConfigurableLogIterations.get(configuration);
+        int logInterval;
+        if (logIterations > 0) {
+            logInterval = iterations / logIterations;
+        } else {
+            logInterval = 0;
+        }
+        return create(iterations, logInterval, callable);
     }
     
     public static <V> IterationCallable<V> create(
             int iterations,
+            int logInterval,
             Callable<V> callable) {
-        return new IterationCallable<V>(iterations, callable);
+        return new IterationCallable<V>(
+                iterations, logInterval, callable, LogManager.getLogger(IterationCallable.class));
     }
 
-    @Configurable(arg="iterations", key="Iterations", value="5", type=ConfigValueType.NUMBER)
-    public static class ConfigurableIterations implements Function<Configuration, Integer> {
-
-        public static Integer get(Configuration configuration) {
-            return new ConfigurableIterations().apply(configuration);
-        }
+    public static abstract class ConfigurableInt implements Function<Configuration, Integer> {
 
         @Override
         public Integer apply(Configuration configuration) {
@@ -41,18 +48,40 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
                             .getInt(configurable.key());
         }
     }
+    
+    @Configurable(arg="iterations", key="Iterations", value="10", type=ConfigValueType.NUMBER)
+    public static class ConfigurableIterations extends ConfigurableInt {
 
+        public static Integer get(Configuration configuration) {
+            return new ConfigurableIterations().apply(configuration);
+        }
+    }
+    
+    @Configurable(key="LogIterations", value="10", type=ConfigValueType.NUMBER)
+    public static class ConfigurableLogIterations extends ConfigurableInt {
+
+        public static Integer get(Configuration configuration) {
+            return new ConfigurableLogIterations().apply(configuration);
+        }
+    }
+
+    protected final Logger logger;
+    protected final int logInterval;
     protected final int iterations;
-    protected final AtomicInteger count;
     protected final Callable<V> callable;
+    protected int count;
     
     public IterationCallable(
             int iterations,
-            Callable<V> callable) {
+            int logInterval,
+            Callable<V> callable,
+            Logger logger) {
         checkArgument(iterations >= 0);
+        this.logger = logger;
+        this.logInterval = logInterval;
         this.iterations = iterations;
-        this.count = new AtomicInteger(0);
         this.callable = callable;
+        this.count = 0;
     }
     
     public int getIterations() {
@@ -60,13 +89,16 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
     }
     
     public int getCount() {
-        return count.get();
+        return count;
     }
     
     @Override
     public Optional<V> call() throws Exception {
-        final int count = this.count.incrementAndGet();
+        this.count++;
         checkState(count <= iterations);
+        if ((logInterval != 0) && ((count == 1) || (count == iterations) || (count % logInterval == 0))) {
+            logger.info("Iteration {}", count);
+        }
         V result = callable.call();
         if (count < iterations) {
             return Optional.absent();
