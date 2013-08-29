@@ -2,6 +2,7 @@ package edu.uw.zookeeper.clients.trace.csv;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +16,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.DefaultMain;
 import edu.uw.zookeeper.DefaultRuntimeModule;
@@ -99,6 +101,38 @@ public class Main extends AbstractModule {
             }
         }
     }
+
+    @Configurable(arg="latency", key="LatencySeries", value="true", type=ConfigValueType.BOOLEAN)
+    public static class LatencySeriesConfiguration implements Function<Configuration, Boolean> {
+
+        public static Boolean get(Configuration configuration) {
+            return new LatencySeriesConfiguration().apply(configuration);
+        }
+
+        @Override
+        public Boolean apply(Configuration configuration) {
+            Configurable configurable = getClass().getAnnotation(Configurable.class);
+            return configuration.withConfigurable(configurable)
+                        .getConfigOrEmpty(configurable.path())
+                            .getBoolean(configurable.key());
+        }
+    }
+
+    @Configurable(arg="operations", key="OperationsSeries", value="true", type=ConfigValueType.BOOLEAN)
+    public static class OperationsSeriesConfiguration implements Function<Configuration, Boolean> {
+
+        public static Boolean get(Configuration configuration) {
+            return new OperationsSeriesConfiguration().apply(configuration);
+        }
+
+        @Override
+        public Boolean apply(Configuration configuration) {
+            Configurable configurable = getClass().getAnnotation(Configurable.class);
+            return configuration.withConfigurable(configurable)
+                        .getConfigOrEmpty(configurable.path())
+                            .getBoolean(configurable.key());
+        }
+    }
     
     @Singleton
     public static class MainApplication implements Application {
@@ -108,6 +142,7 @@ public class Main extends AbstractModule {
         protected final File outputPath;
         protected final CsvSchema.Builder schema;
         protected final ObjectMapper mapper;
+        protected final Configuration configuration;
         
         @Inject
         public MainApplication(
@@ -118,6 +153,7 @@ public class Main extends AbstractModule {
             this.inputPath = Trace.getTraceInputFileConfiguration(configuration);
             this.mapper = mapper;
             this.schema = schema;
+            this.configuration = configuration;
         }
         
         @Override
@@ -128,24 +164,28 @@ public class Main extends AbstractModule {
             String filePrefix = inputPath.getName().substring(
                     0, inputPath.getName().lastIndexOf('.'));
 
-            try {
-                TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
-                LatencySeries.eventsToCsvFile(
-                        schema, 
-                        LatencySeries.toFile(outputPath, filePrefix), 
-                        events);
-            } catch (IOException e) {
-                throw Throwables.propagate(e);
+            if (LatencySeriesConfiguration.get(configuration)) {
+                try {
+                    TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
+                    LatencySeries.eventsToCsvFile(
+                            schema, 
+                            LatencySeries.toFile(outputPath, filePrefix), 
+                            events);
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
             }
 
-            try {
-                TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
-                OperationsTimeSeries.eventsToCsvFile(
-                        schema, 
-                        OperationsTimeSeries.toFile(outputPath, filePrefix), 
-                        events);
-            } catch (IOException e) {
-                throw Throwables.propagate(e);
+            if (OperationsSeriesConfiguration.get(configuration)) {
+                try {
+                    TraceEventIterator events = TraceEventIterator.forFile(inputPath, mapper.reader());
+                    OperationsTimeSeries.eventsToCsvFile(
+                            schema, 
+                            OperationsTimeSeries.toFile(outputPath, filePrefix), 
+                            events);
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
             }
         }
     }
