@@ -4,38 +4,33 @@ import java.util.Set;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.base.Throwables;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.internal.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
-import edu.uw.zookeeper.RuntimeModule;
+import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
+import edu.uw.zookeeper.clients.common.InjectorServiceLocator;
+import edu.uw.zookeeper.clients.common.ServiceLocator;
 import edu.uw.zookeeper.common.Actor;
-import edu.uw.zookeeper.common.Application;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
-import edu.uw.zookeeper.common.Pair;
-import edu.uw.zookeeper.common.ParameterizedFactory;
 import edu.uw.zookeeper.common.Publisher;
+import edu.uw.zookeeper.common.RuntimeModule;
+import edu.uw.zookeeper.net.ClientConnectionFactory;
+import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
 
-public class MeasuringClientModule extends TraceWriterClientModule {
+public class MeasuringClientBuilder extends TraceWriterClientBuilder<MeasuringClientBuilder> {
 
-    public static ParameterizedFactory<RuntimeModule, Application> factory() {
-        return new ParameterizedFactory<RuntimeModule, Application>() {
-            @Override
-            public Application get(RuntimeModule runtime) {
-                try {
-                    return new MeasuringClientModule(runtime).call();
-                } catch (Exception e) {
-                    throw Throwables.propagate(e);
-                }
-            }  
-        };
+    public static MeasuringClientBuilder defaults() {
+        return new MeasuringClientBuilder();
     }
-
+    
     @Configurable(arg="latency", key="MeasureLatency", value="false", type=ConfigValueType.BOOLEAN)
     public static class MeasureLatencyConfiguration implements Function<Configuration, Boolean> {
 
@@ -68,11 +63,16 @@ public class MeasuringClientModule extends TraceWriterClientModule {
         }
     }
     
-    public class Module extends TraceWriterClientModule.Module {
+    public class Module extends TraceWriterClientBuilder<MeasuringClientBuilder>.Module {
+
+        protected Module() {
+            super();
+        }
 
         @Override
         protected void configure() {
-            install(JacksonModule.create());
+            installDependentModules();
+            bind(ServiceLocator.class).to(InjectorServiceLocator.class).in(Singleton.class);
         }
 
         @Provides @Singleton
@@ -99,22 +99,46 @@ public class MeasuringClientModule extends TraceWriterClientModule {
         }
     }
     
-    protected MeasuringClientModule(RuntimeModule runtime) {
-        super(runtime);
+    protected MeasuringClientBuilder() {
+        this(null, null, null);
+    }
+
+    protected MeasuringClientBuilder(
+            Injector injector,
+            ClientConnectionFactoryBuilder connectionBuilder,
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
+        super(injector, connectionBuilder, clientConnectionFactory);
+    }
+
+    @Override
+    public MeasuringClientBuilder setInjector(Injector injector) {
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
     }
     
     @Override
-    protected com.google.inject.Module module() {
-        return new Module();
+    public MeasuringClientBuilder setRuntimeModule(RuntimeModule runtime) {
+        return new MeasuringClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory);
+    }
+    
+    @Override
+    public MeasuringClientBuilder setConnectionBuilder(ClientConnectionFactoryBuilder connectionBuilder) {
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+    }
+    
+    @Override
+    public MeasuringClientBuilder setClientConnectionFactory(
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+    }
+    
+    @Override
+    protected Injector getDefaultInjector() {
+        return Guice.createInjector(new Module());
     }
 
     @Override
-    protected ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> getCodecFactory() {
-        return OperationTracingCodec.factory(injector.getInstance(Publisher.class));
-    }
-
-    @Override
-    protected TraceHeader getTraceHeader(Configuration configuration) {
+    protected TraceHeader getDefaultTraceHeader() {
+        Configuration configuration = getRuntimeModule().configuration();
         ImmutableSet.Builder<TraceEventTag> types = ImmutableSet.builder();
         types.add(TraceEventTag.TIMESTAMP_EVENT);
         if (MeasureLatencyConfiguration.get(configuration)) {
@@ -127,7 +151,13 @@ public class MeasuringClientModule extends TraceWriterClientModule {
             types.add(TraceEventTag.OPERATION_EVENT);
         }
         return TraceHeader.create(
-                TraceDescriptionConfiguration.get(configuration), 
+                TraceModule.TraceDescriptionConfiguration.get(configuration), 
                 types.build());
+    }
+
+    @Override
+    protected ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> getDefaultClientConnectionFactory() {
+        return connectionBuilder.setCodecFactory(
+                OperationTracingCodec.factory(injector.getInstance(Publisher.class))).build();
     }
 }

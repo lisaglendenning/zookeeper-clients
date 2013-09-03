@@ -105,7 +105,9 @@ public final class ThroughputMeasurementEvent implements TraceEvent {
         public static Deserializer create() {
             return new Deserializer();
         }
-    
+
+        private static final long serialVersionUID = 6964040364139601927L;
+
         public Deserializer() {
             super(ThroughputMeasurementEvent.class);
         }
