@@ -30,6 +30,7 @@ import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
+import edu.uw.zookeeper.protocol.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class TraceIteratorClientBuilder extends TraceClientBuilder<TraceIteratorClientBuilder> {
@@ -52,35 +53,42 @@ public class TraceIteratorClientBuilder extends TraceClientBuilder<TraceIterator
     }
 
     protected TraceIteratorClientBuilder() {
-        this(null, null, null);
+        this(null, null, null, null);
     }
     
     protected TraceIteratorClientBuilder(
             Injector injector,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        super(injector, connectionBuilder, clientConnectionFactory);
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+            ClientConnectionExecutorService clientExecutor) {
+        super(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     @Override
     public TraceIteratorClientBuilder setInjector(Injector injector) {
-        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     @Override
     public TraceIteratorClientBuilder setRuntimeModule(RuntimeModule runtime) {
-        return new TraceIteratorClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory);
+        return new TraceIteratorClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public TraceIteratorClientBuilder setConnectionBuilder(ClientConnectionFactoryBuilder connectionBuilder) {
-        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public TraceIteratorClientBuilder setClientConnectionFactory(
             ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
+    }
+
+    @Override
+    public TraceIteratorClientBuilder setClientConnectionExecutor(
+            ClientConnectionExecutorService clientExecutor) {
+        return new TraceIteratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override

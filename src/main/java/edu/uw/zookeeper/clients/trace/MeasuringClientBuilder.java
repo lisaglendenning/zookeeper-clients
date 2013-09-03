@@ -24,6 +24,7 @@ import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
+import edu.uw.zookeeper.protocol.client.ClientConnectionExecutorService;
 
 public class MeasuringClientBuilder extends TraceWriterClientBuilder<MeasuringClientBuilder> {
 
@@ -100,35 +101,42 @@ public class MeasuringClientBuilder extends TraceWriterClientBuilder<MeasuringCl
     }
     
     protected MeasuringClientBuilder() {
-        this(null, null, null);
+        this(null, null, null, null);
     }
 
     protected MeasuringClientBuilder(
             Injector injector,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        super(injector, connectionBuilder, clientConnectionFactory);
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+            ClientConnectionExecutorService clientExecutor) {
+        super(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     @Override
     public MeasuringClientBuilder setInjector(Injector injector) {
-        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public MeasuringClientBuilder setRuntimeModule(RuntimeModule runtime) {
-        return new MeasuringClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory);
+        return new MeasuringClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public MeasuringClientBuilder setConnectionBuilder(ClientConnectionFactoryBuilder connectionBuilder) {
-        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public MeasuringClientBuilder setClientConnectionFactory(
             ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
+    }
+    
+    @Override
+    public MeasuringClientBuilder setClientConnectionExecutor(
+            ClientConnectionExecutorService clientExecutor) {
+        return new MeasuringClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override

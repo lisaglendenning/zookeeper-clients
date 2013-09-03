@@ -5,13 +5,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.common.util.concurrent.Service;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.google.inject.internal.Lists;
-
 import edu.uw.zookeeper.client.ClientBuilder;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.ClientExecutor;
@@ -46,11 +43,6 @@ public abstract class TraceClientBuilder<C extends TraceClientBuilder<C>> extend
         public TraceHeader getTraceHeader() {
             return builder.getDefaultTraceHeader();
         }
-        
-        @Provides @Singleton
-        public ClientConnectionExecutorService getClientConnectionExecutorService() {
-            return builder.getDefaultClientConnectionExecutorService();
-        }
 
         @Override
         protected List<com.google.inject.Module> getDependentModules() {
@@ -66,8 +58,9 @@ public abstract class TraceClientBuilder<C extends TraceClientBuilder<C>> extend
     protected TraceClientBuilder(
             Injector injector,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        super(connectionBuilder, clientConnectionFactory);
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+            ClientConnectionExecutorService clientExecutor) {
+        super(connectionBuilder, clientConnectionFactory, clientExecutor);
         this.injector = injector;
     }
 
@@ -81,7 +74,7 @@ public abstract class TraceClientBuilder<C extends TraceClientBuilder<C>> extend
     @Override
     public C setDefaults() {
         if (injector == null) {
-            return setInjector(getDefaultInjector());
+            return setInjector(getDefaultInjector()).setDefaults();
         } else {
             return (C) super.setDefaults();
         }
@@ -98,7 +91,7 @@ public abstract class TraceClientBuilder<C extends TraceClientBuilder<C>> extend
     protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().configuration(), 
-                injector.getInstance(ClientConnectionExecutorService.class));
+                clientExecutor);
     }
     
     protected TraceHeader getDefaultTraceHeader() {
@@ -107,12 +100,5 @@ public abstract class TraceClientBuilder<C extends TraceClientBuilder<C>> extend
                 TraceEventTag.TIMESTAMP_EVENT, 
                 TraceEventTag.PROTOCOL_REQUEST_EVENT, 
                 TraceEventTag.PROTOCOL_RESPONSE_EVENT);
-    }
-
-    @Override
-    protected List<Service> getServices() {
-        return Lists.<Service>newArrayList(
-                clientConnectionFactory, 
-                injector.getInstance(ClientConnectionExecutorService.class));
     }
 }

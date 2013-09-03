@@ -74,8 +74,9 @@ public abstract class TraceWriterClientBuilder<C extends TraceWriterClientBuilde
     protected TraceWriterClientBuilder(
             Injector injector,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        super(injector, connectionBuilder, clientConnectionFactory);
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+            ClientConnectionExecutorService clientExecutor) {
+        super(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     public ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache() {
@@ -109,8 +110,7 @@ public abstract class TraceWriterClientBuilder<C extends TraceWriterClientBuilde
     }
 
     protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
-        ClientConnectionExecutorService client = injector.getInstance(ClientConnectionExecutorService.class);
-        return ZNodeViewCache.newInstance(client, client);
+        return ZNodeViewCache.newInstance(clientExecutor, clientExecutor);
     }
 
     @Override

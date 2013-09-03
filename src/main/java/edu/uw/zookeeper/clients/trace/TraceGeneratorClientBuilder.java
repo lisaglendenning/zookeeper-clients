@@ -12,6 +12,7 @@ import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
+import edu.uw.zookeeper.protocol.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class TraceGeneratorClientBuilder extends TraceWriterClientBuilder<TraceGeneratorClientBuilder> {
@@ -21,35 +22,42 @@ public class TraceGeneratorClientBuilder extends TraceWriterClientBuilder<TraceG
     }
     
     protected TraceGeneratorClientBuilder() {
-        this(null, null, null);
+        this(null, null, null, null);
     }
 
     protected TraceGeneratorClientBuilder(
             Injector injector,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        super(injector, connectionBuilder, clientConnectionFactory);
+            ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+            ClientConnectionExecutorService clientExecutor) {
+        super(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     @Override
     public TraceGeneratorClientBuilder setInjector(Injector injector) {
-        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
 
     @Override
     public TraceGeneratorClientBuilder setRuntimeModule(RuntimeModule runtime) {
-        return new TraceGeneratorClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory);
+        return new TraceGeneratorClientBuilder(injector, connectionBuilder.setRuntimeModule(runtime), clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public TraceGeneratorClientBuilder setConnectionBuilder(ClientConnectionFactoryBuilder connectionBuilder) {
-        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override
     public TraceGeneratorClientBuilder setClientConnectionFactory(
             ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
-        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory);
+        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
+    }
+    
+    @Override
+    public TraceGeneratorClientBuilder setClientConnectionExecutor(
+            ClientConnectionExecutorService clientExecutor) {
+        return new TraceGeneratorClientBuilder(injector, connectionBuilder, clientConnectionFactory, clientExecutor);
     }
     
     @Override
