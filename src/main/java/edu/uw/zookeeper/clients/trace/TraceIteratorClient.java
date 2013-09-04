@@ -52,7 +52,7 @@ public class TraceIteratorClient extends ZooKeeperApplication {
 
         @Override
         public TraceIteratorClient build() {
-            ServiceMonitor monitor = getRuntimeModule().serviceMonitor();
+            ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }

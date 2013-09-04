@@ -19,11 +19,14 @@ import edu.uw.zookeeper.common.ServiceMonitor;
 
 public class GuiceRuntimeModule extends AbstractModule {
 
-    public static GuiceRuntimeModule create() {
-        return new GuiceRuntimeModule();
+    public static GuiceRuntimeModule create(RuntimeModule runtime) {
+        return new GuiceRuntimeModule(runtime);
     }
+
+    private final RuntimeModule runtime;
     
-    public GuiceRuntimeModule() {
+    public GuiceRuntimeModule(RuntimeModule runtime) {
+        this.runtime = runtime;
     }
     
     @Override
@@ -32,29 +35,34 @@ public class GuiceRuntimeModule extends AbstractModule {
         bind(ExecutorService.class).to(ListeningExecutorService.class).in(Singleton.class);
         bind(ScheduledExecutorService.class).to(ListeningScheduledExecutorService.class).in(Singleton.class);
     }
+    
+    @Provides @Singleton
+    public RuntimeModule getRuntimeModule() {
+        return runtime;
+    }
 
     @Provides @Singleton
     public ServiceMonitor getServiceMonitor(
             RuntimeModule runtime) {
-        return runtime.serviceMonitor();
+        return runtime.getServiceMonitor();
     }
 
     @Provides @Singleton
     public Configuration getConfiguration(
             RuntimeModule runtime) {
-        return runtime.configuration();
+        return runtime.getConfiguration();
     }
 
     @Provides @Singleton
     public Factory<ThreadFactory> getThreadFactory(
             RuntimeModule runtime) {
-        return runtime.threadFactory();
+        return runtime.getThreadFactory();
     }
 
     @Provides @Singleton
     public ListeningExecutorServiceFactory getExecutors(
             RuntimeModule runtime) {
-        return runtime.executors();
+        return runtime.getExecutors();
     }
     
     @Provides @Singleton

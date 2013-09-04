@@ -10,19 +10,16 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-
+import edu.uw.zookeeper.common.Builder;
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestDeserializer;
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestSerializer;
 import edu.uw.zookeeper.jackson.databind.Version;
 import edu.uw.zookeeper.protocol.Operation;
 
-public class JacksonModule extends AbstractModule {
+public class ObjectMapperBuilder implements Builder<ObjectMapper> {
 
-    public static JacksonModule create() {
-        return new JacksonModule();
+    public static ObjectMapperBuilder defaults() {
+        return new ObjectMapperBuilder();
     }
     
     public static final com.fasterxml.jackson.core.Version PROJECT_VERSION = new com.fasterxml.jackson.core.Version(
@@ -32,12 +29,7 @@ public class JacksonModule extends AbstractModule {
             Version.VERSION_FIELDS[3], 
             Version.GROUP, Version.ARTIFACT);
     
-    @Override
-    protected void configure() {
-    }
-
-    @Provides @Singleton
-    public ObjectMapper getObjectMapper() {
+    public ObjectMapper build() {
         List<JsonSerializer<?>> serializers = ImmutableList.<JsonSerializer<?>>of(
                 ProtocolRequestSerializer.create(),
                 ProtocolResponseHeaderSerializer.create(),

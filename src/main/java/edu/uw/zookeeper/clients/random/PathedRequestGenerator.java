@@ -10,15 +10,20 @@ import edu.uw.zookeeper.protocol.proto.Records;
 
 public class PathedRequestGenerator implements Generator<Records.Request> {
 
-    public static PathedRequestGenerator create(
+    public static PathedRequestGenerator fromCache(
             ZNodeViewCache<?,?,?> cache) {
         Random random = new Random();
         CachedPaths paths = CachedPaths.create(cache, random);
+        return exists(paths);
+    }
+
+    public static PathedRequestGenerator exists(
+            Generator<ZNodeLabel.Path> paths) {
         Operations.PathBuilder<? extends Records.Request,?> operation = Operations.Requests.exists().setPath(ZNodeLabel.Path.root()).setWatch(false);
         return new PathedRequestGenerator(
                 operation, paths);
     }
-
+    
     protected final Generator<ZNodeLabel.Path> paths;
     protected final Operations.PathBuilder<? extends Records.Request,?> operation;
 

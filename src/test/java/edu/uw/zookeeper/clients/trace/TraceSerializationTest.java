@@ -14,9 +14,6 @@ import org.junit.runners.JUnit4;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolRequestMessage;
@@ -29,8 +26,7 @@ public class TraceSerializationTest {
     
     @Test
     public void testSerialize() throws IOException {
-        Injector injector = Guice.createInjector(JacksonModule.create());
-        ObjectMapper mapper = injector.getInstance(ObjectMapper.class);
+        ObjectMapper mapper = ObjectMapperBuilder.defaults().build();
         assertTrue(mapper.canDeserialize(mapper.constructType(Message.ClientRequest.class)));
         testTraceEventHeaderSerialization(TimestampEvent.currentTimeMillis(), mapper);
         testTraceEventHeaderSerialization(LatencyMeasurementEvent.create(1), mapper);
@@ -43,8 +39,7 @@ public class TraceSerializationTest {
 
     @Test
     public void testIterator() throws IOException {
-        Injector injector = Guice.createInjector(JacksonModule.create());
-        ObjectMapper mapper = injector.getInstance(ObjectMapper.class);
+        ObjectMapper mapper = ObjectMapperBuilder.defaults().build();
         StringWriter w = new StringWriter();
         JsonGenerator generator = mapper.getFactory().createGenerator(w);
         TraceHeader header = TraceHeader.create("", TraceEventTag.TIMESTAMP_EVENT);

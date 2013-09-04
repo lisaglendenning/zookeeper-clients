@@ -4,6 +4,8 @@ import java.io.File;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.google.common.base.Function;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
@@ -18,6 +20,10 @@ public abstract class Trace {
 
     public static File getTraceInputFileConfiguration(Configuration configuration) {
         return TraceInputFileConfiguration.get(configuration);
+    }
+    
+    public static String getTraceDescription(Configuration configuration) {
+        return TraceDescriptionConfiguration.get(configuration);
     }
     
     @Configurable(path="Trace", arg="output", key="OutputFile", value="trace-%d.json", help="Path")
@@ -57,5 +63,25 @@ public abstract class Trace {
                             .getString(configurable.key());
             return new File(value).getAbsoluteFile();
         }   
+    }
+    
+    @Configurable(arg="description", path="Trace", key="Description", help="Description", type=ConfigValueType.STRING)
+    public static class TraceDescriptionConfiguration implements Function<Configuration, String> {
+
+        public static String get(Configuration configuration) {
+            return new TraceDescriptionConfiguration().apply(configuration);
+        }
+
+        @Override
+        public String apply(Configuration configuration) {
+            Configurable configurable = getClass().getAnnotation(Configurable.class);
+            Config config = configuration.withConfigurable(configurable)
+                    .getConfigOrEmpty(configurable.path());
+            if (config.hasPath(configurable.key())) {
+                return config.getString(configurable.key());
+            } else {
+                return "";
+            }
+        }
     }
 }

@@ -24,6 +24,14 @@ public class TraceEventPublisherService extends AbstractIdleService {
         this.writer = writer;
     }
     
+    public Publisher getPublisher() {
+        return publisher;
+    }
+    
+    public Actor<? super TraceEvent> getWriter() {
+        return writer;
+    }
+    
     @Subscribe
     public void handleTraceEvent(TraceEvent event) {
         writer.send(event);

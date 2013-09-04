@@ -52,7 +52,7 @@ public class MeasuringClient extends ZooKeeperApplication {
 
         @Override
         public MeasuringClient build() {
-            ServiceMonitor monitor = getRuntimeModule().serviceMonitor();
+            ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }

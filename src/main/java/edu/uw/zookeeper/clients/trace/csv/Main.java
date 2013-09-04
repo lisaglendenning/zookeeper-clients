@@ -20,7 +20,7 @@ import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.DefaultMain;
 import edu.uw.zookeeper.DefaultRuntimeModule;
-import edu.uw.zookeeper.clients.trace.JacksonModule;
+import edu.uw.zookeeper.clients.trace.ObjectMapperBuilder;
 import edu.uw.zookeeper.clients.trace.Trace;
 import edu.uw.zookeeper.clients.trace.TraceEventIterator;
 import edu.uw.zookeeper.common.Application;
@@ -52,11 +52,16 @@ public class Main extends AbstractModule {
     }
     
     protected Injector createInjector() {
-        return Guice.createInjector(JacksonModule.create(), this);
+        return Guice.createInjector(this);
     }
     
     @Override
     protected void configure() {
+    }
+    
+    @Provides @Singleton
+    public ObjectMapper getObjectMapper() {
+        return ObjectMapperBuilder.defaults().build();
     }
 
     @Provides @Singleton

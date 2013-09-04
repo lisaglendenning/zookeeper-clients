@@ -31,7 +31,7 @@ public class RandomSingleClientTest {
     @Test(timeout=10000)
     public void testRandom() throws Exception {
         SimpleServerAndClient client = SimpleServerAndClient.defaults().setDefaults();
-        ServiceMonitor monitor = client.getRuntimeModule().serviceMonitor();
+        ServiceMonitor monitor = client.getRuntimeModule().getServiceMonitor();
         for (Service service: client.build()) {
             monitor.add(service);
         }
