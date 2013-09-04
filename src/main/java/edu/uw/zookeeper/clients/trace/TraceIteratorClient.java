@@ -4,31 +4,20 @@ import com.google.common.util.concurrent.Service;
 
 import edu.uw.zookeeper.ZooKeeperApplication;
 import edu.uw.zookeeper.common.Application;
-import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.ServiceApplication;
 import edu.uw.zookeeper.common.ServiceMonitor;
 
-public class TraceIteratorClient extends ZooKeeperApplication {
+public class TraceIteratorClient extends ZooKeeperApplication.ForwardingApplication {
 
     public static void main(String[] args) {
         ZooKeeperApplication.main(args, new MainBuilder());
     }
 
-    protected final Application application;
-    
-    protected TraceIteratorClient(Application application) {
-        super();
-        this.application = application;
+    protected TraceIteratorClient(Application delegate) {
+        super(delegate);
     }
 
-    @Override
-    public void run() {
-        application.run();
-    }
-
-    protected static class MainBuilder implements ZooKeeperApplication.RuntimeBuilder<TraceIteratorClient> {
-        
-        protected final TraceIteratorClientBuilder delegate;
+    protected static class MainBuilder extends ZooKeeperApplication.ForwardingBuilder<TraceIteratorClient, TraceIteratorClientBuilder, MainBuilder> {
         
         public MainBuilder() {
             this(TraceIteratorClientBuilder.defaults());
@@ -36,22 +25,16 @@ public class TraceIteratorClient extends ZooKeeperApplication {
 
         public MainBuilder(
                 TraceIteratorClientBuilder delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
-        public RuntimeModule getRuntimeModule() {
-            return delegate.getRuntimeModule();
+        protected MainBuilder newInstance(TraceIteratorClientBuilder delegate) {
+            return new MainBuilder(delegate);
         }
 
         @Override
-        public MainBuilder setRuntimeModule(
-                RuntimeModule runtime) {
-            return new MainBuilder(delegate.setRuntimeModule(runtime));
-        }
-
-        @Override
-        public TraceIteratorClient build() {
+        protected TraceIteratorClient doBuild() {
             ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);

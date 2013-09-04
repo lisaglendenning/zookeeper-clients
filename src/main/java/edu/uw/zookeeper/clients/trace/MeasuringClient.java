@@ -4,31 +4,20 @@ import com.google.common.util.concurrent.Service;
 
 import edu.uw.zookeeper.ZooKeeperApplication;
 import edu.uw.zookeeper.common.Application;
-import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.ServiceApplication;
 import edu.uw.zookeeper.common.ServiceMonitor;
 
-public class MeasuringClient extends ZooKeeperApplication {
+public class MeasuringClient extends ZooKeeperApplication.ForwardingApplication {
 
     public static void main(String[] args) {
         ZooKeeperApplication.main(args, new MainBuilder());
     }
 
-    protected final Application application;
-    
-    protected MeasuringClient(Application application) {
-        super();
-        this.application = application;
+    protected MeasuringClient(Application delegate) {
+        super(delegate);
     }
 
-    @Override
-    public void run() {
-        application.run();
-    }
-
-    protected static class MainBuilder implements ZooKeeperApplication.RuntimeBuilder<MeasuringClient> {
-        
-        protected final MeasuringClientBuilder delegate;
+    protected static class MainBuilder extends ZooKeeperApplication.ForwardingBuilder<MeasuringClient, MeasuringClientBuilder, MainBuilder> {
         
         public MainBuilder() {
             this(MeasuringClientBuilder.defaults());
@@ -36,22 +25,16 @@ public class MeasuringClient extends ZooKeeperApplication {
 
         public MainBuilder(
                 MeasuringClientBuilder delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
-        public RuntimeModule getRuntimeModule() {
-            return delegate.getRuntimeModule();
+        protected MainBuilder newInstance(MeasuringClientBuilder delegate) {
+            return new MainBuilder(delegate);
         }
 
         @Override
-        public MainBuilder setRuntimeModule(
-                RuntimeModule runtime) {
-            return new MainBuilder(delegate.setRuntimeModule(runtime));
-        }
-
-        @Override
-        public MeasuringClient build() {
+        protected MeasuringClient doBuild() {
             ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);

@@ -27,7 +27,7 @@ import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 
-public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuilder<C>> implements ZooKeeperApplication.RuntimeBuilder<List<Service>> {
+public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuilder<C>> implements ZooKeeperApplication.RuntimeBuilder<List<Service>, C> {
 
     protected final Logger logger = LogManager.getLogger(getClass());
     protected final RuntimeModule runtime;

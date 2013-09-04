@@ -4,31 +4,20 @@ import com.google.common.util.concurrent.Service;
 
 import edu.uw.zookeeper.ZooKeeperApplication;
 import edu.uw.zookeeper.common.Application;
-import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.ServiceApplication;
 import edu.uw.zookeeper.common.ServiceMonitor;
 
-public class TraceGeneratingCacheClient extends ZooKeeperApplication {
+public class TraceGeneratingCacheClient extends ZooKeeperApplication.ForwardingApplication {
 
     public static void main(String[] args) {
         ZooKeeperApplication.main(args, new MainBuilder());
     }
 
-    protected final Application application;
-    
-    protected TraceGeneratingCacheClient(Application application) {
-        super();
-        this.application = application;
+    protected TraceGeneratingCacheClient(Application delegate) {
+        super(delegate);
     }
 
-    @Override
-    public void run() {
-        application.run();
-    }
-
-    protected static class MainBuilder implements ZooKeeperApplication.RuntimeBuilder<TraceGeneratingCacheClient> {
-        
-        protected final TraceGeneratingCacheClientBuilder delegate;
+    protected static class MainBuilder extends ZooKeeperApplication.ForwardingBuilder<TraceGeneratingCacheClient, TraceGeneratingCacheClientBuilder, MainBuilder> {
         
         public MainBuilder() {
             this(TraceGeneratingCacheClientBuilder.defaults());
@@ -36,22 +25,16 @@ public class TraceGeneratingCacheClient extends ZooKeeperApplication {
 
         public MainBuilder(
                 TraceGeneratingCacheClientBuilder delegate) {
-            this.delegate = delegate;
+            super(delegate);
         }
 
         @Override
-        public RuntimeModule getRuntimeModule() {
-            return delegate.getRuntimeModule();
+        protected MainBuilder newInstance(TraceGeneratingCacheClientBuilder delegate) {
+            return new MainBuilder(delegate);
         }
 
         @Override
-        public MainBuilder setRuntimeModule(
-                RuntimeModule runtime) {
-            return new MainBuilder(delegate.setRuntimeModule(runtime));
-        }
-
-        @Override
-        public TraceGeneratingCacheClient build() {
+        protected TraceGeneratingCacheClient doBuild() {
             ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);
