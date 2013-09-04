@@ -15,7 +15,7 @@ import com.typesafe.config.Config;
 
 import edu.uw.zookeeper.ZooKeeperApplication;
 import edu.uw.zookeeper.clients.trace.ObjectMapperBuilder;
-import edu.uw.zookeeper.clients.trace.Trace;
+import edu.uw.zookeeper.clients.trace.Tracing;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.RuntimeModule;
@@ -121,7 +121,7 @@ public abstract class CsvExportBuilder<T, C extends CsvExportBuilder<T,C>> imple
     protected File getDefaultInputFile() {
         File file;
         try {
-            file = Trace.getTraceInputFileConfiguration(getRuntimeModule().getConfiguration()).getCanonicalFile();
+            file = Tracing.getTraceInputFileConfiguration(getRuntimeModule().getConfiguration()).getCanonicalFile();
         } catch (IOException e) {
             throw Throwables.propagate(e);
         }

@@ -55,17 +55,22 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     
     protected TraceGeneratingCacheClientBuilder(
             ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache,
-            ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
+            ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        super(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ObjectMapper mapper,
+            RuntimeModule runtime) {
+        super(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
         this.cache = cache;
+    }
+    
+    public ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache() {
+        return cache;
     }
 
     public TraceGeneratingCacheClientBuilder setCache(
             ZNodeViewCache<?, Request, ServerResponse<?>> cache) {
-        return newInstance(cache, mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+        return newInstance(cache, clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
@@ -80,24 +85,28 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     }
     
     @Override
-    protected TraceGeneratingCacheClientBuilder newInstance(ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
+    protected TraceGeneratingCacheClientBuilder newInstance(
+            ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        return newInstance(cache, mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ObjectMapper mapper,
+            RuntimeModule runtime) {
+        return newInstance(cache, clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     protected TraceGeneratingCacheClientBuilder newInstance(
             ZNodeViewCache<?, Request, ServerResponse<?>> cache,
-            ObjectMapper mapper, TraceWriterBuilder traceBuilder,
-            TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        return new TraceGeneratingCacheClientBuilder(cache, mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ClientBuilder clientBuilder,
+            TraceWriterBuilder writerBuilder,
+            TraceEventPublisherService tracePublisher,  
+            ObjectMapper mapper, 
+            RuntimeModule runtime) {
+        return new TraceGeneratingCacheClientBuilder(cache, clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
-    protected List<Service> getServices() {
-        List<Service> services = super.getServices();
+    protected List<Service> doBuild() {
+        List<Service> services = super.doBuild();
         services.add(services.size() - 1, new FetchCacheService(cache));
         return services;
     }

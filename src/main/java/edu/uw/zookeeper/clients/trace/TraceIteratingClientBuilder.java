@@ -27,22 +27,22 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
     }
 
     public TraceIteratingClientBuilder(
-            ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
-            TraceEventPublisherService tracePublisher,
             ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
+            TraceEventPublisherService tracePublisher,
+            ObjectMapper mapper,
             RuntimeModule runtime) {
-        super(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+        super(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
     protected TraceIteratingClientBuilder newInstance(
-            ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
-            TraceEventPublisherService tracePublisher,
             ClientBuilder clientBuilder,
+            TraceWriterBuilder writerBuilder,
+            TraceEventPublisherService tracePublisher,
+            ObjectMapper mapper,
             RuntimeModule runtime) {
-        return new TraceIteratingClientBuilder(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+        return new TraceIteratingClientBuilder(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
     
     @Override
@@ -70,7 +70,7 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
 
     protected Iterator<Records.Request> getDefaultRequests() {
         ObjectReader reader = mapper.reader();
-        File file = Trace.getTraceInputFileConfiguration(getRuntimeModule().getConfiguration());
+        File file = Tracing.getTraceInputFileConfiguration(getRuntimeModule().getConfiguration());
         logger.info("Trace input: {}", file);
         Iterator<TraceEvent> events;
         try {

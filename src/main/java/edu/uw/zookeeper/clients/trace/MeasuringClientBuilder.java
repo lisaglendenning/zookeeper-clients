@@ -63,19 +63,23 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
         this(null, null, null, null, null);
     }
 
-    protected MeasuringClientBuilder(ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
+    protected MeasuringClientBuilder(
+            ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        super(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ObjectMapper mapper,
+            RuntimeModule runtime) {
+        super(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
-    protected MeasuringClientBuilder newInstance(ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
+    protected MeasuringClientBuilder newInstance(
+            ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        return new MeasuringClientBuilder(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ObjectMapper mapper,
+            RuntimeModule runtime) {
+        return new MeasuringClientBuilder(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
@@ -93,13 +97,13 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
             types.add(TraceEventTag.OPERATION_EVENT);
         }
         return TraceHeader.create(
-                Trace.getTraceDescription(getRuntimeModule().getConfiguration()), 
+                Tracing.getTraceDescription(getRuntimeModule().getConfiguration()), 
                 types.build());
     }
     
     @Override
-    protected TraceEventPublisherService getDefaultTraceEventPublisherService() {
-        TraceWriter writer = traceBuilder.build();
+    protected TraceEventPublisherService getDefaultTracePublisher() {
+        TraceWriter writer = writerBuilder.build();
         final Set<TraceEventTag> types = writer.header().getTypes();
         Predicate<TraceEvent> filter = new Predicate<TraceEvent>() {
             @Override

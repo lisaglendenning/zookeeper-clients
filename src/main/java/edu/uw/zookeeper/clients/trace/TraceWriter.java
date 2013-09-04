@@ -22,7 +22,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
             TraceHeader header,
             Executor executor) throws IOException {
         return create(
-                writer.getFactory().createGenerator(file, Trace.ENCODING), 
+                writer.getFactory().createGenerator(file, Tracing.ENCODING), 
                 writer,
                 header,
                 executor);

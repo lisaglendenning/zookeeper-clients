@@ -16,12 +16,13 @@ import edu.uw.zookeeper.protocol.proto.Records;
 
 public abstract class TraceGeneratingClientBuilder<C extends TraceGeneratingClientBuilder<C>> extends TraceWritingClientBuilder<C> {
 
-
-    public TraceGeneratingClientBuilder(ObjectMapper mapper,
-            TraceWriterBuilder traceBuilder,
+    protected TraceGeneratingClientBuilder(
+            ClientBuilder clientBuilder, 
+            TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
-            ClientBuilder clientBuilder, RuntimeModule runtime) {
-        super(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+            ObjectMapper mapper,
+            RuntimeModule runtime) {
+        super(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
     @Override
