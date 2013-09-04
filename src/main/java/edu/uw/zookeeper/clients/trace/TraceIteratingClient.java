@@ -7,39 +7,39 @@ import edu.uw.zookeeper.common.Application;
 import edu.uw.zookeeper.common.ServiceApplication;
 import edu.uw.zookeeper.common.ServiceMonitor;
 
-public class TraceIteratorClient extends ZooKeeperApplication.ForwardingApplication {
+public class TraceIteratingClient extends ZooKeeperApplication.ForwardingApplication {
 
     public static void main(String[] args) {
         ZooKeeperApplication.main(args, new MainBuilder());
     }
 
-    protected TraceIteratorClient(Application delegate) {
+    protected TraceIteratingClient(Application delegate) {
         super(delegate);
     }
 
-    protected static class MainBuilder extends ZooKeeperApplication.ForwardingBuilder<TraceIteratorClient, TraceIteratorClientBuilder, MainBuilder> {
+    protected static class MainBuilder extends ZooKeeperApplication.ForwardingBuilder<TraceIteratingClient, TraceIteratingClientBuilder, MainBuilder> {
         
         public MainBuilder() {
-            this(TraceIteratorClientBuilder.defaults());
+            this(TraceIteratingClientBuilder.defaults());
         }
 
         public MainBuilder(
-                TraceIteratorClientBuilder delegate) {
+                TraceIteratingClientBuilder delegate) {
             super(delegate);
         }
 
         @Override
-        protected MainBuilder newInstance(TraceIteratorClientBuilder delegate) {
+        protected MainBuilder newInstance(TraceIteratingClientBuilder delegate) {
             return new MainBuilder(delegate);
         }
 
         @Override
-        protected TraceIteratorClient doBuild() {
+        protected TraceIteratingClient doBuild() {
             ServiceMonitor monitor = getRuntimeModule().getServiceMonitor();
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new TraceIteratorClient(ServiceApplication.newInstance(monitor));
+            return new TraceIteratingClient(ServiceApplication.newInstance(monitor));
         }
     }
 }

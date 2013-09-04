@@ -16,17 +16,17 @@ import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.proto.Records;
 
-public class TraceIteratorClientBuilder extends TraceWritingClientBuilder<TraceIteratorClientBuilder> {
+public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<TraceIteratingClientBuilder> {
 
-    public static TraceIteratorClientBuilder defaults() {
-        return new TraceIteratorClientBuilder();
+    public static TraceIteratingClientBuilder defaults() {
+        return new TraceIteratingClientBuilder();
     }
 
-    public TraceIteratorClientBuilder() {
+    public TraceIteratingClientBuilder() {
         this(null, null, null, null, null);
     }
 
-    public TraceIteratorClientBuilder(
+    public TraceIteratingClientBuilder(
             ObjectMapper mapper,
             TraceWriterBuilder traceBuilder,
             TraceEventPublisherService tracePublisher,
@@ -36,13 +36,13 @@ public class TraceIteratorClientBuilder extends TraceWritingClientBuilder<TraceI
     }
 
     @Override
-    protected TraceIteratorClientBuilder newInstance(
+    protected TraceIteratingClientBuilder newInstance(
             ObjectMapper mapper,
             TraceWriterBuilder traceBuilder,
             TraceEventPublisherService tracePublisher,
             ClientBuilder clientBuilder,
             RuntimeModule runtime) {
-        return new TraceIteratorClientBuilder(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
+        return new TraceIteratingClientBuilder(mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
     }
     
     @Override

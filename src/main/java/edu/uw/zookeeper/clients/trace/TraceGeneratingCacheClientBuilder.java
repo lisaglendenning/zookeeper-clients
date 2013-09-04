@@ -1,10 +1,13 @@
 package edu.uw.zookeeper.clients.trace;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Service;
+
 import edu.uw.zookeeper.client.ClientBuilder;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
@@ -31,7 +34,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         private final ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache;
         
         public FetchCacheService(ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache) {
-            this.cache = cache;
+            this.cache = checkNotNull(cache);
         }
         
         @Override
@@ -61,7 +64,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     }
 
     public TraceGeneratingCacheClientBuilder setCache(
-            ZNodeViewCache<?, Request, ServerResponse<?>> defaultCache) {
+            ZNodeViewCache<?, Request, ServerResponse<?>> cache) {
         return newInstance(cache, mapper, traceBuilder, tracePublisher, clientBuilder, runtime);
     }
 
@@ -95,7 +98,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     @Override
     protected List<Service> getServices() {
         List<Service> services = super.getServices();
-        services.set(services.size() - 2, new FetchCacheService(null));
+        services.add(services.size() - 1, new FetchCacheService(cache));
         return services;
     }
 
