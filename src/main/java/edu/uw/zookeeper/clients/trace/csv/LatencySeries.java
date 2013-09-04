@@ -21,7 +21,7 @@ public class LatencySeries {
     }
     
     public static void eventsToCsvFile(
-            CsvSchema.Builder schema, File output, Iterator<TraceEvent> events) throws IOException {
+            CsvSchema.CsvSchemaBuilder schema, File output, Iterator<TraceEvent> events) throws IOException {
         CsvAppender writer = CsvAppender.forFile(
                 output, 
                 schema.withColumns(columns()).build());

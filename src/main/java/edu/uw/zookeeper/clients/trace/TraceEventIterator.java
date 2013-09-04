@@ -1,5 +1,6 @@
 package edu.uw.zookeeper.clients.trace;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
@@ -11,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 
-public class TraceEventIterator extends AbstractIterator<TraceEvent> {
+public class TraceEventIterator extends AbstractIterator<TraceEvent> implements Closeable {
 
     public static TraceEventIterator forFile(
             File file,
@@ -62,7 +63,7 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
             try {
                 JsonToken next = json.nextToken();
                 if ((next == null) || (next == JsonToken.END_ARRAY)) {
-                    json.close();
+                    close();
                     return endOfData();
                 }
             } catch (IOException e) {
@@ -74,5 +75,10 @@ public class TraceEventIterator extends AbstractIterator<TraceEvent> {
         } catch (IOException e) {
             throw Throwables.propagate(e);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        json.close();
     }
 }

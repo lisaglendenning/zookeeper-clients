@@ -12,17 +12,19 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
+import edu.uw.zookeeper.common.Builder;
+
 
 public class CsvSchema implements Appender<Writer> {
 
-    public static Builder builder() {
-        return Builder.defaults();
+    public static CsvSchemaBuilder builder() {
+        return CsvSchemaBuilder.defaults();
     }
     
-    public static class Builder {
+    public static class CsvSchemaBuilder implements Builder<CsvSchema> {
 
-        public static Builder defaults() {
-            return new Builder(
+        public static CsvSchemaBuilder defaults() {
+            return new CsvSchemaBuilder(
                     ImmutableList.<CsvColumn>of(), 
                     Optional.of(
                             Functions.compose(
@@ -41,7 +43,7 @@ public class CsvSchema implements Appender<Writer> {
         protected final Delimiter delimitColumn;
         protected final Delimiter delimitRecord;
         
-        public Builder(
+        public CsvSchemaBuilder(
                 ImmutableList<CsvColumn> columns,
                 Optional<? extends Function<? super CsvColumn, String>> columnFormatter,
                 Delimiter delimitColumn,
@@ -52,24 +54,33 @@ public class CsvSchema implements Appender<Writer> {
             this.delimitRecord = delimitRecord;
         }
 
-        public Builder withColumns(ImmutableList<CsvColumn> columns) {
-            return new Builder(columns, columnFormatter, delimitColumn, delimitRecord);
+        public CsvSchemaBuilder withColumns(ImmutableList<CsvColumn> columns) {
+            return newInstance(columns, columnFormatter, delimitColumn, delimitRecord);
         }
 
-        public Builder delimitColumns(String delimiter) {
-            return new Builder(columns, columnFormatter, StringDelimiter.forString(delimiter), delimitRecord);
+        public CsvSchemaBuilder delimitColumns(String delimiter) {
+            return newInstance(columns, columnFormatter, StringDelimiter.forString(delimiter), delimitRecord);
         }
         
-        public Builder delimitRecords(String delimiter) {
-            return new Builder(columns, columnFormatter, delimitColumn, StringDelimiter.forString(delimiter));
+        public CsvSchemaBuilder delimitRecords(String delimiter) {
+            return newInstance(columns, columnFormatter, delimitColumn, StringDelimiter.forString(delimiter));
         }
         
-        public Builder formatColumns(Function<? super CsvColumn, String> formatter) {
-            return new Builder(columns, Optional.<Function<? super CsvColumn, String>>of(formatter), delimitColumn, delimitRecord);
+        public CsvSchemaBuilder formatColumns(Function<? super CsvColumn, String> formatter) {
+            return newInstance(columns, Optional.<Function<? super CsvColumn, String>>of(formatter), delimitColumn, delimitRecord);
         }
         
+        @Override
         public CsvSchema build() {
             return new CsvSchema(columns, columnFormatter, delimitColumn, delimitRecord);
+        }
+        
+        protected CsvSchemaBuilder newInstance(
+                ImmutableList<CsvColumn> columns,
+                Optional<? extends Function<? super CsvColumn, String>> columnFormatter,
+                Delimiter delimitColumn,
+                Delimiter delimitRecord) {
+            return new CsvSchemaBuilder(columns, columnFormatter, delimitColumn, delimitRecord);
         }
     }
 
