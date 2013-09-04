@@ -189,13 +189,16 @@ public abstract class Tracing {
 
         @Override
         public C setDefaults() {
-            if (writerBuilder == null) {
-                return setTraceWriterBuilder(getDefaultWriterBuilder()).setDefaults();
+            C builder = super.setDefaults();
+            if (this == builder) {
+                if (writerBuilder == null) {
+                    return setTraceWriterBuilder(getDefaultWriterBuilder()).setDefaults();
+                }
+                if (tracePublisher == null) {
+                    return setTracePublisher(getDefaultTracePublisher()).setDefaults();
+                }
             }
-            if (tracePublisher == null) {
-                return setTracePublisher(getDefaultTracePublisher()).setDefaults();
-            }
-            return (C) super.setDefaults();
+            return builder;
         }
         
         @Override
