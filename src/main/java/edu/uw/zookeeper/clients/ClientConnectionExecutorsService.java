@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.inject.internal.Sets;
 
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.net.Connection;

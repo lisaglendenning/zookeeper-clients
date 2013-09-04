@@ -5,7 +5,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.inject.internal.ImmutableSet;
+import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.client.ClientBuilder;
