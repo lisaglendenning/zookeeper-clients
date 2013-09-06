@@ -9,7 +9,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
 import com.google.common.eventbus.Subscribe;
 
-import edu.uw.zookeeper.Session;
+import edu.uw.zookeeper.protocol.Session;
 import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ParameterizedFactory;

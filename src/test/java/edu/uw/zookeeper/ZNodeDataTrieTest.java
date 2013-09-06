@@ -25,7 +25,6 @@ import edu.uw.zookeeper.common.ListAccumulator;
 import edu.uw.zookeeper.common.LoggingPublisher;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.data.ZNodeDataTrie;
-import edu.uw.zookeeper.data.ZNodeDataTrieExecutor;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.proto.Records;
