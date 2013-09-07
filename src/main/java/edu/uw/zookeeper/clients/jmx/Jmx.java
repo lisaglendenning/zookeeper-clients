@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Set;
+
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -26,6 +27,29 @@ import edu.uw.zookeeper.data.ZNodeLabelTrie;
 
 public abstract class Jmx {
     
+    /**
+     * Takes a JVM id as a command-line argument.
+     * Prints org.apache.ZooKeeperService MBeans.
+     */
+    public static void main(String[] args) throws IOException {
+        DefaultsFactory<String, JMXServiceURL> urlFactory = SunAttachQueryJmx.getInstance();
+        JMXServiceURL url = (args.length > 0) ? urlFactory.get(args[0]) : urlFactory.get();
+        JMXConnector connector = JMXConnectorFactory.connect(url);
+        try {
+            MBeanServerConnection mbeans = connector.getMBeanServerConnection();
+            for (ServerSchema schema: ServerSchema.values()) {
+                ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> objectNames = schema.instantiate(mbeans);
+                if (! objectNames.isEmpty()) {
+                    for (ZNodeLabelTrie.ValueNode<Set<ObjectName>> e: objectNames) {
+                        System.out.printf("%s = %s%n", e.path(), e.get());
+                    }
+                }
+            }
+        } finally {
+            connector.close();
+        }
+    }
+
     public static String FORMAT_REGEX = "%.";
     public static char WILDCARD = '*';
     
@@ -256,21 +280,4 @@ public abstract class Jmx {
     }
 
     private Jmx() {}
-    
-    public static void main(String[] args) throws IOException {
-        DefaultsFactory<String, JMXServiceURL> urlFactory = SunAttachQueryJmx.getInstance();
-        JMXServiceURL url = (args.length > 0) ? urlFactory.get(args[0]) : urlFactory.get();
-        JMXConnector connector = JMXConnectorFactory.connect(url);
-        try {
-            MBeanServerConnection mbeans = connector.getMBeanServerConnection();
-            for (ServerSchema schema: ServerSchema.values()) {
-                ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> objectNames = schema.instantiate(mbeans);
-                if (! objectNames.isEmpty()) {
-                    System.out.println(objectNames.toString());
-                }
-            }
-        } finally {
-            connector.close();
-        }
-    }
 }

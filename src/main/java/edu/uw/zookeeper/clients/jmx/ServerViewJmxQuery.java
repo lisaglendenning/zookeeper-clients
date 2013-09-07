@@ -28,6 +28,39 @@ import edu.uw.zookeeper.data.ZNodeLabelTrie;
 
 public abstract class ServerViewJmxQuery {
 
+    /**
+     * Takes a JVM id as a command-line argument.
+     * Prints the server client network address if discovered.
+     * Prints the ensemble quorum addresses if discovered.
+     */
+    public static void main(String[] args) throws Exception {        
+        DefaultsFactory<String, JMXServiceURL> urlFactory = SunAttachQueryJmx.getInstance();
+        JMXServiceURL url = (args.length > 0) ? urlFactory.get(args[0]) : urlFactory.get();
+        JMXConnector connector = JMXConnectorFactory.connect(url);
+        StringBuilder output = new StringBuilder();
+        try {
+            MBeanServerConnection mbeans = connector.getMBeanServerConnection();
+            output.append("ClientAddress").append(' ');
+            ServerView.Address<InetSocketAddress> addressView = addressViewOf(mbeans);
+            if (addressView != null) {
+                output.append(addressView);
+            } else {
+                output.append("not found");
+            }
+            output.append('\n').append("Quorum").append(' ');
+            EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleView = ensembleViewOf(mbeans);
+            if (ensembleView != null) {
+                output.append(ensembleView);
+            } else {
+                output.append("not found");
+            }
+            output.append('\n');
+        } finally {
+            connector.close();
+        }
+        System.out.println(output.toString());
+    }
+
     public static final String CLIENT_PORT_ATTRIBUTE = "ClientPort";
     public static final String QUORUM_ADDRESS_ATTRIBUTE = "QuorumAddress";
     
@@ -118,24 +151,5 @@ public abstract class ServerViewJmxQuery {
     }
     
     private ServerViewJmxQuery() {}
-    
-    public static void main(String[] args) throws Exception {        
-        DefaultsFactory<String, JMXServiceURL> urlFactory = SunAttachQueryJmx.getInstance();
-        JMXServiceURL url = (args.length > 0) ? urlFactory.get(args[0]) : urlFactory.get();
-        JMXConnector connector = JMXConnectorFactory.connect(url);
-        try {
-            MBeanServerConnection mbeans = connector.getMBeanServerConnection();
-            ServerView.Address<InetSocketAddress> addressView = addressViewOf(mbeans);
-            if (addressView != null) {
-                System.out.println(addressView);
-            }
-            EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleView = ensembleViewOf(mbeans);
-            if (ensembleView != null) {
-                System.out.println(ensembleView);
-            }
-        } finally {
-            connector.close();
-        }
-    }
 
 }

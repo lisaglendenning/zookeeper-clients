@@ -15,9 +15,31 @@ import com.sun.tools.attach.VirtualMachineDescriptor;
 
 import edu.uw.zookeeper.common.DefaultsFactory;
 
+/**
+ * Gets the JMXServiceURL for a JVM identified by a String id.
+ */
 public enum SunAttachQueryJmx implements DefaultsFactory<String, JMXServiceURL> {
     SUN_ATTACH_QUERY_JMX;
     
+    /**
+     * Takes a JVM id as a command-line argument.
+     * Prints the JMXServiceURL.
+     */
+    public static void main(String[] args) throws Exception {
+        SunAttachQueryJmx query = SunAttachQueryJmx.getInstance();
+        JMXServiceURL url;
+        if (args.length > 0) {
+            url = query.get(args[0]);
+        } else {
+            url = query.get();
+        }
+        if (url != null) {
+            System.out.printf("JMXServiceURL %s%n", url);
+        } else {
+            System.exit(1);
+        }
+    }
+
     public static SunAttachQueryJmx getInstance() {
         return SUN_ATTACH_QUERY_JMX;
     }
@@ -29,6 +51,26 @@ public enum SunAttachQueryJmx implements DefaultsFactory<String, JMXServiceURL> 
     
     private final Logger logger = LogManager.getLogger(SunAttachQueryJmx.class);
     
+    /**
+     * Guesses which JVM is a ZooKeeper server
+     */
+    @Override
+    public JMXServiceURL get() {
+        // Guess which VM
+        List<VirtualMachineDescriptor> vms = VirtualMachine.list();
+        for (VirtualMachineDescriptor vm: vms) {
+            if (vm.displayName().contains(ZOOKEEPER_PACKAGE)) {
+                logger.info("Found {} JVM: {}", ZOOKEEPER_PACKAGE, vm);
+                return get(vm.id());
+            }
+        }
+        logger.warn("No {} JVM found: {}", ZOOKEEPER_PACKAGE, vms);
+        return null;
+    }
+
+    /**
+     * @param id JVM id
+     */
     public JMXServiceURL get(String id) {
         // From http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html
         logger.info("Attaching to JVM: {}", id);
@@ -68,34 +110,5 @@ public enum SunAttachQueryJmx implements DefaultsFactory<String, JMXServiceURL> 
             }
         }
         return url;
-    }
-
-    @Override
-    public JMXServiceURL get() {
-        // Guess which VM
-        List<VirtualMachineDescriptor> vms = VirtualMachine.list();
-        for (VirtualMachineDescriptor vm: vms) {
-            if (vm.displayName().contains(ZOOKEEPER_PACKAGE)) {
-                logger.info("Found {} JVM: {}", ZOOKEEPER_PACKAGE, vm);
-                return get(vm.id());
-            }
-        }
-        logger.warn("No {} JVM found: {}", ZOOKEEPER_PACKAGE, vms);
-        return null;
-    }
-
-    public static void main(String[] args) throws Exception {
-        SunAttachQueryJmx query = SunAttachQueryJmx.getInstance();
-        JMXServiceURL url;
-        if (args.length > 0) {
-            url = query.get(args[0]);
-        } else {
-            url = query.get();
-        }
-        if (url != null) {
-            System.out.println(url);
-        } else {
-            System.exit(1);
-        }
     }
 }
