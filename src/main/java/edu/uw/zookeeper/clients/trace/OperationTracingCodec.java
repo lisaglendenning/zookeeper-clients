@@ -36,7 +36,7 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
                 return Pair.create(Operation.Request.class, AssignXidCodec.newInstance(
                         AssignXidProcessor.newInstance(),
                         OperationTracingCodec.newInstance(publisher,
-                                ClientProtocolCodec.newInstance(publisher))));
+                                ClientProtocolCodec.newInstance(value))));
             }
         };
     }
