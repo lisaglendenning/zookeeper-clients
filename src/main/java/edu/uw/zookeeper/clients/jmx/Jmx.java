@@ -113,7 +113,7 @@ public abstract class Jmx {
                     String component = Iterables.toArray(KEY_SPLITTER.split(property), String.class)[1];
                     components.add(ZNodeLabel.Component.of(component));
                 }
-                return ZNodeLabel.Path.of(components.iterator());
+                return (ZNodeLabel.Path) ZNodeLabel.joined(components.iterator());
             }
         }
     }

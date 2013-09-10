@@ -94,7 +94,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
             while (node.containsKey(child)) {
                 child = labels.next();
             }
-            ((Operations.Requests.Create) builder).setPath(ZNodeLabel.Path.of(path, child)).setMode(mode).setData(datum.next());          
+            ((Operations.Requests.Create) builder).setPath((ZNodeLabel.Path) ZNodeLabel.joined(path, child)).setMode(mode).setData(datum.next());          
         } else {
             ((Operations.PathBuilder<?,?>) builder).setPath(path);
 

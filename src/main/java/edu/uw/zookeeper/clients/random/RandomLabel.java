@@ -48,11 +48,11 @@ public class RandomLabel implements Generator<ZNodeLabel.Component> {
                 chars[i] = alphabet[random.nextInt(alphabet.length)];
             }
             try {
-                component = ZNodeLabel.Component.of(String.valueOf(chars));
+                component = ZNodeLabel.Component.validated(String.valueOf(chars));
             } catch (IllegalArgumentException e) {
                 component = null;
             }
-        } while ((component == null) || component.isReserved());
+        } while ((component == null) || ZNodeLabel.Component.isReserved(component));
         return component;
     }
 }
