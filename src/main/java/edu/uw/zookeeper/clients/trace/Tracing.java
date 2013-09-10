@@ -115,17 +115,27 @@ public abstract class Tracing {
             return runtime;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public C setRuntimeModule(RuntimeModule runtime) {
-            return newInstance(mapper, runtime);
+            if (this.runtime == runtime) {
+                return (C) this;
+            } else {
+                return newInstance(mapper, runtime);
+            }
         }
         
         public ObjectMapper getObjectMapper() {
             return mapper;
         }
         
+        @SuppressWarnings("unchecked")
         public C setObjectMapper(ObjectMapper mapper) {
-            return newInstance(mapper, runtime);
+            if (this.mapper == mapper) {
+                return (C) this;
+            } else {
+                return newInstance(mapper, runtime);
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -173,18 +183,28 @@ public abstract class Tracing {
             return writerBuilder;
         }
 
+        @SuppressWarnings("unchecked")
         public C setTraceWriterBuilder(
                 TraceWriterBuilder writerBuilder) {
-            return newInstance(writerBuilder, tracePublisher, mapper, runtime);
+            if (this.writerBuilder == writerBuilder) {
+                return (C) this;
+            } else {
+                return newInstance(writerBuilder, tracePublisher, mapper, runtime);
+            }
         }
 
         public TraceEventPublisherService getTracePublisher() {
             return tracePublisher;
         }
 
+        @SuppressWarnings("unchecked")
         public C setTracePublisher(
                 TraceEventPublisherService tracePublisher) {
-            return newInstance(writerBuilder, tracePublisher, mapper, runtime);
+            if (this.tracePublisher == tracePublisher) {
+                return (C) this;
+            } else {
+                return newInstance(writerBuilder, tracePublisher, mapper, runtime);
+            }
         }
 
         @Override

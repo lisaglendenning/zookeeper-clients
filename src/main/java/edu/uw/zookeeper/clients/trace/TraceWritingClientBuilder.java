@@ -2,6 +2,7 @@ package edu.uw.zookeeper.clients.trace;
 
 
 import java.util.List;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Service;
@@ -33,10 +34,16 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
         return clientBuilder;
     }
 
+    @SuppressWarnings("unchecked")
     public C setClientBuilder(ClientBuilder clientBuilder) {
-        return newInstance(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
+        if (this.clientBuilder == clientBuilder) {
+            return (C) this;
+        } else {
+            return newInstance(clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
+        }
     }
 
+    @Override
     public C setDefaults() {
         C builder = super.setDefaults();
         if (this == builder) {
@@ -63,11 +70,12 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
             ObjectMapper mapper,
             RuntimeModule runtime);
 
+    @Override
     protected List<Service> doBuild() {
-            List<Service> services = Lists.newLinkedList();
-            services.add(tracePublisher);
-            services.addAll(clientBuilder.build());
-            services.add(RunnableService.create(getDefaultRunnable()));
+        List<Service> services = Lists.newLinkedList();
+        services.add(tracePublisher);
+        services.addAll(clientBuilder.build());
+        services.add(RunnableService.create(getDefaultRunnable()));
         return services;
     }
     
