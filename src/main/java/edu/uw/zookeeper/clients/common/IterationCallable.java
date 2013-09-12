@@ -14,28 +14,31 @@ import com.typesafe.config.ConfigValueType;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 
+/**
+ * Not thread-safe.
+ */
 public class IterationCallable<V> implements Callable<Optional<V>> {
 
     public static <V> IterationCallable<V> create(
             Configuration configuration,
             Callable<V> callable) {
-        int iterations = ConfigurableIterations.get(configuration);
+        int limit = ConfigurableIterations.get(configuration);
         int logIterations = ConfigurableLogIterations.get(configuration);
         int logInterval;
         if (logIterations > 0) {
-            logInterval = iterations / logIterations;
+            logInterval = limit / logIterations;
         } else {
             logInterval = 0;
         }
-        return create(iterations, logInterval, callable);
+        return create(limit, logInterval, callable);
     }
     
     public static <V> IterationCallable<V> create(
-            int iterations,
+            int limit,
             int logInterval,
             Callable<V> callable) {
         return new IterationCallable<V>(
-                iterations, logInterval, callable, LogManager.getLogger(IterationCallable.class));
+                limit, logInterval, callable, LogManager.getLogger(IterationCallable.class));
     }
 
     public static abstract class ConfigurableInt implements Function<Configuration, Integer> {
@@ -64,28 +67,30 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
             return new ConfigurableLogIterations().apply(configuration);
         }
     }
+    
+    protected static final int INFINITE_ITERATIONS = -1;
 
     protected final Logger logger;
     protected final int logInterval;
-    protected final int iterations;
+    protected final int limit;
     protected final Callable<V> callable;
     protected int count;
     
     public IterationCallable(
-            int iterations,
+            int limit,
             int logInterval,
             Callable<V> callable,
             Logger logger) {
-        checkArgument(iterations >= 0);
+        checkArgument((limit >= 0) || (limit == INFINITE_ITERATIONS), limit);
         this.logger = logger;
         this.logInterval = logInterval;
-        this.iterations = iterations;
+        this.limit = limit;
         this.callable = callable;
         this.count = 0;
     }
     
-    public int getIterations() {
-        return iterations;
+    public int getLimit() {
+        return limit;
     }
     
     public int getCount() {
@@ -94,13 +99,15 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
     
     @Override
     public Optional<V> call() throws Exception {
+        if ((limit >=0) && (count >= limit)) {
+            return Optional.absent();
+        }
         this.count++;
-        checkState(count <= iterations);
-        if ((logInterval != 0) && ((count == 1) || (count == iterations) || (count % logInterval == 0))) {
+        if ((logInterval != 0) && ((count == 1) || (count == limit) || (count % logInterval == 0))) {
             logger.info("Iteration {}", count);
         }
         V result = callable.call();
-        if (count < iterations) {
+        if ((limit == INFINITE_ITERATIONS) || (count < limit)) {
             return Optional.absent();
         } else {
             return Optional.of(result);
