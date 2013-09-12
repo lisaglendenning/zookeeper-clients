@@ -8,7 +8,7 @@
 		<groupId>edu.uw.zookeeper</groupId>
 		<artifactId>lite</artifactId>
 		<version>0.5.2-SNAPSHOT</version>
-		<relativePath>../../zookeeper-lite/parent</relativePath>
+		<relativePath>../zookeeper-lite/parent</relativePath>
 	</parent>
 	<build>
 		<plugins>
@@ -20,6 +20,7 @@
 						<id>attach-sources</id>
 						<goals>
 							<goal>jar-no-fork</goal>
+                            <goal>test-jar-no-fork</goal>
 						</goals>
 					</execution>
 				</executions>
