@@ -301,7 +301,9 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
         
         @Override
         public void run() {
-            Futures.addCallback(executor.submit(task()), this, executor);
+            if (! isDone()) {
+                Futures.addCallback(executor.submit(task()), this, executor);
+            }
         }
 
         @Override
