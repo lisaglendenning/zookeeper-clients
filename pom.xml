@@ -73,6 +73,19 @@
 			<artifactId>zklite-jackson</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+        <!-- com.sun.tools.attach.* -->
+        <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <version>1.6</version>
+            <scope>system</scope>
+            <!-- OS X 10.5+ - must first change version of java in utilities/Java Preferences -->
+            <systemPath>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</systemPath>
+            <!-- everything else -->
+            <!--
+                <systemPath>${java.home}/../lib/tools.jar</systemPath>
+            -->
+        </dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>zkserver</artifactId>
