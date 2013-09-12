@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -13,7 +14,9 @@ import org.junit.runners.JUnit4;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
+
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolRequestMessage;
@@ -42,7 +45,7 @@ public class TraceSerializationTest {
         ObjectMapper mapper = ObjectMapperBuilder.defaults().build();
         StringWriter w = new StringWriter();
         JsonGenerator generator = mapper.getFactory().createGenerator(w);
-        TraceHeader header = TraceHeader.create("", TraceEventTag.TIMESTAMP_EVENT);
+        TraceHeader header = TraceHeader.create(ImmutableMap.<String, Object>of(), TraceEventTag.TIMESTAMP_EVENT);
         TraceWriter writer = TraceWriter.create(generator, mapper.writer(), header, MoreExecutors.sameThreadExecutor());
         int n = 10;
         for (int i=0; i<n; ++i) {

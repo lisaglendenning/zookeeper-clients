@@ -3,6 +3,8 @@ package edu.uw.zookeeper.clients.trace;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -10,9 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValueType;
 
@@ -34,7 +38,7 @@ public abstract class Tracing {
         return TraceInputFileConfiguration.get(configuration);
     }
     
-    public static String getTraceDescription(Configuration configuration) {
+    public static Map<String, Object> getTraceDescription(Configuration configuration) {
         return TraceDescriptionConfiguration.get(configuration);
     }
     
@@ -77,22 +81,29 @@ public abstract class Tracing {
         }   
     }
     
-    @Configurable(arg="description", path="Trace", key="Description", help="Description", type=ConfigValueType.STRING)
-    public static class TraceDescriptionConfiguration implements Function<Configuration, String> {
+    @Configurable(arg="description", path="Trace", key="Description", help="Description", value="{}", type=ConfigValueType.STRING)
+    public static class TraceDescriptionConfiguration implements Function<Configuration, Map<String, Object>> {
 
-        public static String get(Configuration configuration) {
+        public static Map<String, Object> get(Configuration configuration) {
             return new TraceDescriptionConfiguration().apply(configuration);
         }
 
         @Override
-        public String apply(Configuration configuration) {
+        public Map<String, Object> apply(Configuration configuration) {
             Configurable configurable = getClass().getAnnotation(Configurable.class);
             Config config = configuration.withConfigurable(configurable)
                     .getConfigOrEmpty(configurable.path());
             if (config.hasPath(configurable.key())) {
-                return config.getString(configurable.key());
+                String description = config.getString(configurable.key());
+                try {
+                    return new ObjectMapper().readValue(
+                            description,
+                            new TypeReference<Map<String,Object>>() {});
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(description, e);
+                }
             } else {
-                return "";
+                return ImmutableMap.of();
             }
         }
     }

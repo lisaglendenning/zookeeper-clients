@@ -1,39 +1,41 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public final class TraceHeader {
 
     public static TraceHeader create(
-            String description,
+            Map<String, Object> description,
             TraceEventTag...types) {
         return create(description, ImmutableSet.copyOf(types));
     }
     
     public static TraceHeader create(
-            String description,
+            Map<String, Object> description,
             Set<TraceEventTag> types) {
         return new TraceHeader(new Date(), description, types);
     }
     
     protected final Date date;
-    protected final String description;
+    protected final Map<String, Object> description;
     protected final ImmutableSet<TraceEventTag> types;
     
     @JsonCreator
     public TraceHeader(
             @JsonProperty("date") Date date, 
-            @JsonProperty("description") String description,
+            @JsonProperty("description") Map<String, Object> description,
             @JsonProperty("types") Set<TraceEventTag> types) {
         super();
         this.date = date;
-        this.description = description;
+        this.description = ImmutableMap.copyOf(description);
         this.types = ImmutableSet.copyOf(types);
     }
     
@@ -41,7 +43,7 @@ public final class TraceHeader {
         return date;
     }
     
-    public String getDescription() {
+    public Map<String, Object> getDescription() {
         return description;
     }
     
