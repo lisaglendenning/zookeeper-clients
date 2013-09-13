@@ -16,7 +16,6 @@ import edu.uw.zookeeper.client.ZNodeViewCache;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.random.BasicRequestGenerator;
 import edu.uw.zookeeper.common.RuntimeModule;
-import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Message.ServerResponse;
 import edu.uw.zookeeper.protocol.Operation;
@@ -39,7 +38,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         
         @Override
         protected void startUp() throws Exception {
-            TreeFetcher.builder().setClient(cache).build().apply(ZNodeLabel.Path.root()).get();
+            TreeFetcher.builder().setClient(cache).build().get();
         }
 
         @Override
