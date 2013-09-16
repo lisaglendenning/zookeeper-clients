@@ -8,6 +8,7 @@ Various ZooKeeper Java clients and utilities based on [zookeeper-lite](http://li
 - edu.uw.zookeeper.clients.trace.MeasuringClient: tracing client that measures latency and throughput of requests
 - edu.uw.zookeeper.clients.trace.TraceGeneratingCacheClient: tracing client that generates random requests
 - edu.uw.zookeeper.clients.trace.TraceIteratingClient: tracing client that replays requests from an existing trace file
+- edu.uw.zookeeper.clients.trace.ThroughputClients: tracing client with multiple sessions
 - edu.uw.zookeeper.clients.trace.csv.CsvExport: exports data from a trace file to CSV files
 
 ## Building
