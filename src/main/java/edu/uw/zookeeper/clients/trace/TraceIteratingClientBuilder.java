@@ -3,11 +3,13 @@ package edu.uw.zookeeper.clients.trace;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
-import edu.uw.zookeeper.client.ClientBuilder;
+
+import edu.uw.zookeeper.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.clients.common.SubmitIterator;
 import edu.uw.zookeeper.common.Pair;
@@ -27,7 +29,7 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
     }
 
     public TraceIteratingClientBuilder(
-            ClientBuilder clientBuilder, 
+            ClientConnectionExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -37,7 +39,7 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
 
     @Override
     protected TraceIteratingClientBuilder newInstance(
-            ClientBuilder clientBuilder,
+            ClientConnectionExecutorService.Builder clientBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,

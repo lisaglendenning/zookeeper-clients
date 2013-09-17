@@ -38,8 +38,7 @@ public class RandomSingleClientTest {
         monitor.startAsync().awaitRunning();
         
         ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache = 
-                ZNodeViewCache.newInstance(
-                        client.getClientBuilder().getClientConnectionExecutor(), 
+                ZNodeViewCache.newInstance( 
                         client.getClientBuilder().getClientConnectionExecutor());
         int iterations = 100;
         Generator<Records.Request> requests = BasicRequestGenerator.create(cache);

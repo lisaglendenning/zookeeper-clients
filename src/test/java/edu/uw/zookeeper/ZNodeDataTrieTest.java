@@ -42,7 +42,7 @@ public class ZNodeDataTrieTest {
                 ZxidIncrementer.fromZero(),
                 LoggingPublisher.create(logger, EventBusPublisher.newInstance()));
         ZNodeViewCache<?, Records.Request, Message.ServerResponse<?>> cache = 
-                ZNodeViewCache.newInstance(executor, SessionClientExecutor.create(1, executor));
+                ZNodeViewCache.newInstance(SessionClientExecutor.create(1, executor));
         int iterations = 100;
         Generator<Records.Request> requests = BasicRequestGenerator.create(cache);
         ListAccumulator<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> accumulator = ListAccumulator.create(

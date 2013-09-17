@@ -8,7 +8,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
-import edu.uw.zookeeper.client.ClientBuilder;
+import edu.uw.zookeeper.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.random.ConstantGenerator;
@@ -64,7 +64,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     }
 
     protected MeasuringClientBuilder(
-            ClientBuilder clientBuilder, 
+            ClientConnectionExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -74,7 +74,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
 
     @Override
     protected MeasuringClientBuilder newInstance(
-            ClientBuilder clientBuilder, 
+            ClientConnectionExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -126,8 +126,8 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     }
     
     @Override
-    protected ClientBuilder getDefaultClientBuilder() {
-        return ClientBuilder.defaults()
+    protected ClientConnectionExecutorService.Builder getDefaultClientBuilder() {
+        return ClientConnectionExecutorService.builder()
                 .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
                         .setCodecFactory(OperationTracingCodec.factory(tracePublisher.getPublisher())))
                 .setRuntimeModule(getRuntimeModule())

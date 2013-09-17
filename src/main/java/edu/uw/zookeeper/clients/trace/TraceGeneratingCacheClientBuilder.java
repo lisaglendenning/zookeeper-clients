@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.client.ClientBuilder;
+import edu.uw.zookeeper.client.ClientConnectionExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.client.TreeFetcher;
@@ -54,7 +54,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     
     protected TraceGeneratingCacheClientBuilder(
             ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache,
-            ClientBuilder clientBuilder, 
+            ClientConnectionExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -85,7 +85,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     
     @Override
     protected TraceGeneratingCacheClientBuilder newInstance(
-            ClientBuilder clientBuilder, 
+            ClientConnectionExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -95,7 +95,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
 
     protected TraceGeneratingCacheClientBuilder newInstance(
             ZNodeViewCache<?, Request, ServerResponse<?>> cache,
-            ClientBuilder clientBuilder,
+            ClientConnectionExecutorService.Builder clientBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,  
             ObjectMapper mapper, 
@@ -112,7 +112,6 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
 
     protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
         return ZNodeViewCache.newInstance(
-                clientBuilder.getClientConnectionExecutor(), 
                 clientBuilder.getClientConnectionExecutor());
     }
 
