@@ -3,6 +3,7 @@ package edu.uw.zookeeper.clients;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -13,9 +14,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,7 +31,10 @@ import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.EnsembleViewFactory;
 import edu.uw.zookeeper.client.ServerViewFactory;
 import edu.uw.zookeeper.client.ClientBuilder.ConfigurableEnsembleView;
+import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.common.Factory;
+import edu.uw.zookeeper.common.Pair;
+import edu.uw.zookeeper.common.Reference;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.net.ClientConnectionFactory;
@@ -42,8 +47,9 @@ import edu.uw.zookeeper.protocol.Session;
 import edu.uw.zookeeper.protocol.Operation.Request;
 import edu.uw.zookeeper.protocol.client.AssignXidCodec;
 import edu.uw.zookeeper.protocol.client.ClientConnectionExecutor;
+import edu.uw.zookeeper.protocol.proto.IDisconnectRequest;
 
-public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor<?>> extends AbstractIdleService implements Factory<ListenableFuture<C>>, Function<C, C> {
+public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor<?>> extends AbstractIdleService implements Factory<ListenableFuture<C>>, Function<C, C>, Iterable<C> {
 
     public static <C extends ClientConnectionExecutor<?>> ClientConnectionExecutorsService<C> newInstance(
             Factory<? extends ListenableFuture<? extends C>> factory) {
@@ -205,13 +211,23 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
     
     @Override
     public ListenableFuture<C> get() {
+        checkState(isRunning());
         return Futures.transform(factory.get(), this, executor);
     }
 
     @Override
     public C apply(C input) {
-        executors.add(input);
+        new ClientHandler(input);
         return input;
+    }
+
+    @Override
+    public Iterator<C> iterator() {
+        ImmutableSet.Builder<C> copy = ImmutableSet.builder();
+        synchronized (executors) {
+            copy.addAll(executors);
+        }
+        return copy.build().iterator();
     }
 
     @Override
@@ -220,26 +236,67 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
 
     @Override
     protected void shutDown() throws Exception {
-        Operations.Requests.Disconnect disconnect = Operations.Requests.disconnect();
-        synchronized (executors) {
-            for (C c: Iterables.consumingIterable(executors)) {
-                try {
-                    if ((c.get().codec().state() == ProtocolState.CONNECTED) && 
-                            (c.get().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
-                        ListenableFuture<Message.ServerResponse<?>> future = c.submit(disconnect.build());
-                        int timeOut = c.session().get().getTimeOut();
-                        if (timeOut > 0) {
-                            future.get(timeOut, TimeUnit.MILLISECONDS);
-                        } else {
-                            future.get();
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.debug("", e);
-                    throw e;
-                } finally {
-                    c.stop();
+        IDisconnectRequest disconnect = Operations.Requests.disconnect().build();
+        List<Pair<C, ListenableFuture<Message.ServerResponse<?>>>> futures = Lists.newArrayListWithExpectedSize(executors.size());
+        for (C c: this) {
+            ListenableFuture<Message.ServerResponse<?>> future = null;
+            try {
+                if ((c.get().codec().state() == ProtocolState.CONNECTED) && 
+                        (c.get().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
+                    future = c.submit(disconnect);
+                } else {
+                    future = null;
                 }
+            } catch (Exception e) {
+                future = Futures.immediateFailedFuture(e);
+            }
+            futures.add(Pair.create(c, future));
+        }
+        
+        for (Pair<C, ListenableFuture<Message.ServerResponse<?>>> future: futures) {
+            try {
+                if (future.second() != null) {
+                    int timeOut = future.first().session().get().getTimeOut();
+                    if (timeOut > 0) {
+                        future.second().get(timeOut, TimeUnit.MILLISECONDS);
+                    } else {
+                        future.second().get();
+                    }
+                }
+            } catch (Exception e) {
+                logger.debug("", e);
+            } finally {
+                future.first().stop();
+            }
+        }
+    }
+    
+    protected class ClientHandler implements Reference<C> {
+        
+        protected final C instance;
+        
+        public ClientHandler(C instance) {
+            this.instance = instance;
+            executors.add(instance);
+            instance.register(this);
+            if (! isRunning()) {
+                instance.get().close();
+                throw new IllegalStateException(String.valueOf(state()));
+            }
+        }
+        
+        @Override
+        public C get() {
+            return instance;
+        }
+
+        @Subscribe
+        public void handleTransition(Automaton.Transition<?> event) {
+            if (event.to() == Connection.State.CONNECTION_CLOSED) {
+                try {
+                    instance.unregister(this);
+                } catch (IllegalArgumentException e) {}
+                executors.remove(instance);
             }
         }
     }
