@@ -88,7 +88,9 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
             if (this.runtime == runtime) {
                 return this;
             } else {
-                return newInstance(connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
+                return newInstance(
+                        (connectionBuilder == null) ? connectionBuilder : connectionBuilder.setRuntimeModule(runtime), 
+                        clientConnectionFactory, clientExecutors, runtime);
             }
         }
 
