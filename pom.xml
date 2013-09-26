@@ -12,11 +12,9 @@
 	</parent>
 	<properties>
        <!-- OS X 10.5+ - must first change version of java in utilities/Java Preferences -->
-       <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path>
+<!--   <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path> -->
        <!-- everything else -->
-       <!--
-           <java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
-       -->
+       <java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
 	</properties>
 	<build>
 		<plugins>
