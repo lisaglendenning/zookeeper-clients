@@ -42,7 +42,7 @@ public abstract class Tracing {
         return TraceDescriptionConfiguration.get(configuration);
     }
     
-    @Configurable(path="Trace", arg="output", key="OutputFile", value="trace-%d.json", help="Path")
+    @Configurable(path="trace", arg="output", key="outputFile", value="trace-%d.json", help="path")
     public static class TraceOutputFileConfiguration implements Function<Configuration, File> {
 
         public static File get(Configuration configuration) {
@@ -63,7 +63,7 @@ public abstract class Tracing {
         }   
     }
     
-    @Configurable(path="Trace", arg="input", key="InputFile", value="trace.json", help="Path")
+    @Configurable(path="trace", arg="input", key="inputFile", value="trace.json", help="path")
     public static class TraceInputFileConfiguration implements Function<Configuration, File> {
 
         public static File get(Configuration configuration) {
@@ -81,7 +81,7 @@ public abstract class Tracing {
         }   
     }
     
-    @Configurable(arg="description", path="Trace", key="Description", help="Description", value="{}", type=ConfigValueType.STRING)
+    @Configurable(arg="description", path="trace", key="description", help="description", value="{}", type=ConfigValueType.STRING)
     public static class TraceDescriptionConfiguration implements Function<Configuration, Map<String, Object>> {
 
         public static Map<String, Object> get(Configuration configuration) {

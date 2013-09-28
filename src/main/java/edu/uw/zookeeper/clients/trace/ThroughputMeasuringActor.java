@@ -24,7 +24,7 @@ public class ThroughputMeasuringActor implements Actor<TraceEvent> {
         return new ThroughputMeasuringActor(interval, delegate);
     }
     
-    @Configurable(arg="interval", key="ThroughputInterval", value="500 ms", help="Time")
+    @Configurable(arg="interval", key="throughputInterval", value="500 ms", help="time")
     public static class ConfigurableThroughputInterval implements Function<Configuration, TimeValue> {
     
         public static TimeValue get(Configuration configuration) {

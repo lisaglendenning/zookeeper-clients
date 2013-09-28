@@ -148,7 +148,7 @@ public abstract class CsvExportBuilder<T, C extends CsvExportBuilder<T,C>> imple
         return ObjectMapperBuilder.defaults().build();
     }
     
-    @Configurable(arg="output", key="OutputPath", help="Path")
+    @Configurable(arg="output", key="outputPath", help="path")
     public static class OutputPathConfiguration implements Function<Configuration, File> {
 
         public static File get(Configuration configuration) {

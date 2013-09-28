@@ -7,39 +7,76 @@
 	<parent>
 		<groupId>edu.uw.zookeeper</groupId>
 		<artifactId>lite</artifactId>
-		<version>0.5.4-SNAPSHOT</version>
+		<version>0.5.4</version>
 		<relativePath>../zookeeper-lite/parent</relativePath>
 	</parent>
 	<properties>
-       <!-- OS X 10.5+ - must first change version of java in utilities/Java Preferences -->
-<!--   <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path> -->
-       <!-- everything else -->
-       <java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
+		<!-- OS X 10.5+ - must first change version of java in utilities/Java Preferences -->
+		<!-- <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path> -->
+		<!-- everything else -->
+		<java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
 	</properties>
 	<build>
+        <resources>
+            <resource>
+                <directory>../zookeeper-lite/zkcore/src/main/resources</directory>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>../zookeeper-lite/zkcore/src/test/resources</directory>
+            </testResource>
+        </testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
 				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar-no-fork</goal>
+                    <execution>
+                        <id>jar-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>test-jar-sources</id>
+                        <goals>
                             <goal>test-jar-no-fork</goal>
-						</goals>
-					</execution>
+                        </goals>
+                    </execution>
 				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<executions>
-					<execution>
-						<goals>
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
+                    <execution>
+                        <id>default-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>${main.class}</mainClass>
+                                </manifest>
+                            </archive>
+                            <excludes>
+                                <exclude>log4j2.xml</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>log4j2.xml</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -47,7 +84,7 @@
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>copy-dependencies-scope</id>
+						<id>copy-dependencies</id>
 						<phase>package</phase>
 						<goals>
 							<goal>copy-dependencies</goal>
@@ -80,14 +117,14 @@
 			<artifactId>zklite-jackson</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-        <!-- com.sun.tools.attach.* -->
-        <dependency>
-            <groupId>com.sun</groupId>
-            <artifactId>tools</artifactId>
-            <version>1.6</version>
-            <scope>system</scope>
-            <systemPath>${java.tools.path}</systemPath>
-        </dependency>
+		<!-- com.sun.tools.attach.* -->
+		<dependency>
+			<groupId>com.sun</groupId>
+			<artifactId>tools</artifactId>
+			<version>1.6</version>
+			<scope>system</scope>
+			<systemPath>${java.tools.path}</systemPath>
+		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>zkserver</artifactId>

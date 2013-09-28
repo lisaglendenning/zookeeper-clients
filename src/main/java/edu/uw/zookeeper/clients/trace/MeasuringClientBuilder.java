@@ -27,7 +27,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
         return new MeasuringClientBuilder();
     }
     
-    @Configurable(arg="latency", key="MeasureLatency", value="false", type=ConfigValueType.BOOLEAN)
+    @Configurable(arg="latency", key="measureLatency", value="false", type=ConfigValueType.BOOLEAN)
     public static class MeasureLatencyConfiguration implements Function<Configuration, Boolean> {
 
         public static Boolean get(Configuration configuration) {
@@ -43,7 +43,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
         }
     }
 
-    @Configurable(arg="throughput", key="MeasureThroughput", value="true", type=ConfigValueType.BOOLEAN)
+    @Configurable(arg="throughput", key="measureThroughput", value="true", type=ConfigValueType.BOOLEAN)
     public static class MeasureThroughputConfiguration implements Function<Configuration, Boolean> {
 
         public static Boolean get(Configuration configuration) {

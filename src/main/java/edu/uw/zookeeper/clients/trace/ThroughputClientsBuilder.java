@@ -49,7 +49,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                 null, null, null, null, null);
     }
     
-    @Configurable(arg="clients", key="Clients", value="100", type=ConfigValueType.NUMBER)
+    @Configurable(arg="clients", key="clients", value="100", type=ConfigValueType.NUMBER)
     public static class ConfigurableClients implements Function<Configuration, Integer> {
 
         public static Integer get(Configuration configuration) {

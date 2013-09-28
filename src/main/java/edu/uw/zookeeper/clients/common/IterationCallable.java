@@ -52,7 +52,7 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
         }
     }
     
-    @Configurable(arg="iterations", key="Iterations", value="10", type=ConfigValueType.NUMBER)
+    @Configurable(arg="iterations", key="iterations", value="10", type=ConfigValueType.NUMBER)
     public static class ConfigurableIterations extends ConfigurableInt {
 
         public static Integer get(Configuration configuration) {
@@ -60,7 +60,7 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
         }
     }
     
-    @Configurable(key="LogIterations", value="10", type=ConfigValueType.NUMBER)
+    @Configurable(key="logIterations", value="10", type=ConfigValueType.NUMBER)
     public static class ConfigurableLogIterations extends ConfigurableInt {
 
         public static Integer get(Configuration configuration) {
