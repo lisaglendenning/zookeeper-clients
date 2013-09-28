@@ -15,16 +15,17 @@
 		<!-- <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path> -->
 		<!-- everything else -->
 		<java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
+        <zookeeper.lite.source>${project.basedir}/../zookeeper-lite</zookeeper.lite.source>
 	</properties>
 	<build>
         <resources>
             <resource>
-                <directory>../zookeeper-lite/zkcore/src/main/resources</directory>
+                <directory>${zookeeper.lite.source}/zkcore/src/main/resources</directory>
             </resource>
         </resources>
         <testResources>
             <testResource>
-                <directory>../zookeeper-lite/zkcore/src/test/resources</directory>
+                <directory>${zookeeper.lite.source}/zkcore/src/test/resources</directory>
             </testResource>
         </testResources>
 		<plugins>
@@ -56,11 +57,6 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${main.class}</mainClass>
-                                </manifest>
-                            </archive>
                             <excludes>
                                 <exclude>log4j2.xml</exclude>
                             </excludes>
