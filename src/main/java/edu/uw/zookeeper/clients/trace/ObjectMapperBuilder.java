@@ -26,7 +26,7 @@ public class ObjectMapperBuilder implements Builder<ObjectMapper> {
             Integer.valueOf(Version.VERSION_FIELDS[0]), 
             Integer.valueOf(Version.VERSION_FIELDS[1]), 
             Integer.valueOf(Version.VERSION_FIELDS[2]),
-            Version.VERSION_FIELDS[3], 
+            Version.VERSION_FIELDS.length > 3 ? Version.VERSION_FIELDS[3] : null, 
             Version.GROUP, Version.ARTIFACT);
     
     public ObjectMapper build() {
