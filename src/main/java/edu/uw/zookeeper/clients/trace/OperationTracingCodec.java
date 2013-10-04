@@ -17,26 +17,22 @@ import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.ConnectMessage;
 import edu.uw.zookeeper.protocol.Message;
-import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolCodec;
 import edu.uw.zookeeper.protocol.ProtocolState;
-import edu.uw.zookeeper.protocol.client.AssignXidCodec;
-import edu.uw.zookeeper.protocol.client.AssignXidProcessor;
 import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
 import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
 public class OperationTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
-    public static ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>> factory(
+    public static ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, OperationTracingCodec>> factory(
             final Publisher publisher) {
-        return new ParameterizedFactory<Publisher, Pair<Class<Operation.Request>, AssignXidCodec>>() {
+        return new ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, OperationTracingCodec>>() {
             @Override
-            public Pair<Class<Operation.Request>, AssignXidCodec> get(
+            public Pair<Class<Message.ClientSession>, OperationTracingCodec> get(
                     Publisher value) {
-                return Pair.create(Operation.Request.class, AssignXidCodec.newInstance(
-                        AssignXidProcessor.newInstance(),
+                return Pair.create(Message.ClientSession.class,
                         OperationTracingCodec.newInstance(publisher,
-                                ClientProtocolCodec.newInstance(value))));
+                                ClientProtocolCodec.newInstance(value)));
             }
         };
     }

@@ -40,12 +40,10 @@ import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.net.ClientConnectionFactory;
 import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.Message;
-import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.ProtocolCodec;
 import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.Session;
-import edu.uw.zookeeper.protocol.Operation.Request;
-import edu.uw.zookeeper.protocol.client.AssignXidCodec;
 import edu.uw.zookeeper.protocol.client.ClientConnectionExecutor;
 import edu.uw.zookeeper.protocol.proto.IDisconnectRequest;
 
@@ -64,12 +62,12 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
 
         protected final RuntimeModule runtime;
         protected final ClientConnectionFactoryBuilder connectionBuilder;
-        protected final ClientConnectionFactory<? extends ProtocolCodecConnection<Request, AssignXidCodec, Connection<Request>>> clientConnectionFactory;
+        protected final ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory;
         protected final ClientConnectionExecutorsService<?> clientExecutors;
 
         protected Builder(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
                 ClientConnectionExecutorsService<?> clientExecutors,
                 RuntimeModule runtime) {
             this.connectionBuilder = connectionBuilder;
@@ -106,12 +104,12 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
             }
         }
 
-        public ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> getClientConnectionFactory() {
+        public ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> getClientConnectionFactory() {
             return clientConnectionFactory;
         }
 
         public Builder setClientConnectionFactory(
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory) {
+                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory) {
             if (this.clientConnectionFactory == clientConnectionFactory) {
                 return this;
             } else {
@@ -165,7 +163,7 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
         
         protected Builder newInstance(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
                 ClientConnectionExecutorsService<?> clientExecutors,
                 RuntimeModule runtime) {
             return new Builder(connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
@@ -175,7 +173,7 @@ public class ClientConnectionExecutorsService<C extends ClientConnectionExecutor
             return ClientConnectionFactoryBuilder.defaults().setRuntimeModule(runtime).setDefaults();
         }
 
-        protected ClientConnectionFactory<? extends ProtocolCodecConnection<Operation.Request, AssignXidCodec, Connection<Operation.Request>>> getDefaultClientConnectionFactory() {
+        protected ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> getDefaultClientConnectionFactory() {
             return connectionBuilder.build();
         }
 
