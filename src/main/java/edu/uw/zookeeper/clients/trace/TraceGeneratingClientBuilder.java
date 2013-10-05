@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import edu.uw.zookeeper.client.ClientConnectionExecutorService;
+import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;
@@ -17,7 +17,7 @@ import edu.uw.zookeeper.protocol.proto.Records;
 public abstract class TraceGeneratingClientBuilder<C extends TraceGeneratingClientBuilder<C>> extends TraceWritingClientBuilder<C> {
 
     protected TraceGeneratingClientBuilder(
-            ClientConnectionExecutorService.Builder clientBuilder, 
+            ConnectionClientExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,

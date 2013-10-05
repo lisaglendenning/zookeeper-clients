@@ -2,6 +2,7 @@ package edu.uw.zookeeper.clients.trace;
 
 import java.util.List;
 import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +21,7 @@ import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
-import edu.uw.zookeeper.clients.ClientConnectionExecutorsService;
+import edu.uw.zookeeper.clients.ConnectionClientExecutorsService;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;
 import edu.uw.zookeeper.clients.common.RunnableService;
@@ -39,7 +40,8 @@ import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.Message;
-import edu.uw.zookeeper.protocol.client.ClientConnectionExecutor;
+import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.client.AbstractConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<Service>, ThroughputClientsBuilder> {
@@ -66,10 +68,10 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     }
 
     protected final Logger logger = LogManager.getLogger(getClass());
-    protected final ClientConnectionExecutorsService.Builder connectionBuilder;
+    protected final ConnectionClientExecutorsService.OperationBuilder connectionBuilder;
     
     protected ThroughputClientsBuilder(
-            ClientConnectionExecutorsService.Builder connectionBuilder,
+            ConnectionClientExecutorsService.OperationBuilder connectionBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher, 
             ObjectMapper mapper,
@@ -78,11 +80,11 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
         this.connectionBuilder = connectionBuilder;
     }
 
-    public ClientConnectionExecutorsService.Builder getConnectionBuilder() {
+    public ConnectionClientExecutorsService.OperationBuilder getConnectionBuilder() {
         return connectionBuilder;
     }
 
-    public ThroughputClientsBuilder setConnectionBuilder(ClientConnectionExecutorsService.Builder connectionBuilder) {
+    public ThroughputClientsBuilder setConnectionBuilder(ConnectionClientExecutorsService.OperationBuilder connectionBuilder) {
         if (this.connectionBuilder == connectionBuilder) {
             return this;
         } else {
@@ -97,7 +99,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
             if (connectionBuilder == null) {
                 return setConnectionBuilder(getDefaultConnectionBuilder()).setDefaults();
             }
-            ClientConnectionExecutorsService.Builder connectionBuilder = this.connectionBuilder.setDefaults();
+            ConnectionClientExecutorsService.OperationBuilder connectionBuilder = this.connectionBuilder.setDefaults();
             if (this.connectionBuilder != connectionBuilder) {
                 return setConnectionBuilder(connectionBuilder).setDefaults();
             }
@@ -115,7 +117,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     }
     
     protected ThroughputClientsBuilder newInstance(
-            ClientConnectionExecutorsService.Builder connectionBuilder,
+            ConnectionClientExecutorsService.OperationBuilder connectionBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher, 
             ObjectMapper mapper,
@@ -166,8 +168,8 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                 .setDefaults();
     }
     
-    protected ClientConnectionExecutorsService.Builder getDefaultConnectionBuilder() {
-        return ClientConnectionExecutorsService.builder()
+    protected ConnectionClientExecutorsService.OperationBuilder getDefaultConnectionBuilder() {
+        return ConnectionClientExecutorsService.builder()
                 .setConnectionBuilder(getDefaultClientConnectionFactoryBuilder())
                 .setRuntimeModule(runtime)
                 .setDefaults(); 
@@ -189,13 +191,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
             @Override
             public void run() {
                 try {
-                    List<ClientConnectionExecutor<?>> executors = Lists.newArrayListWithCapacity(nclients);
+                    List<AbstractConnectionClientExecutor<Operation.Request, ?, ?>> executors = Lists.newArrayListWithCapacity(nclients);
                     for (int i=0; i<nclients; ++i) {
                         executors.add(connectionBuilder.getClientConnectionExecutors().get().get());
                     }
                     
                     List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
-                    for (ClientConnectionExecutor<?> e: executors) {
+                    for (AbstractConnectionClientExecutor<Operation.Request, ?, ?> e: executors) {
                         IterationCallable<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> task = IterationCallable.create(
                                 iterations, logInterval,
                                 SubmitCallable.create(

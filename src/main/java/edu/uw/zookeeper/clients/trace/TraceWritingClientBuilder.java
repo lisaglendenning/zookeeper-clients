@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.client.ClientConnectionExecutorService;
+import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
@@ -18,10 +18,10 @@ import edu.uw.zookeeper.protocol.Operation;
 
 public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuilder<C>> extends Tracing.TraceWritingBuilder<List<Service>, C> {
 
-    protected final ClientConnectionExecutorService.Builder clientBuilder;
+    protected final ConnectionClientExecutorService.Builder clientBuilder;
 
     protected TraceWritingClientBuilder(
-            ClientConnectionExecutorService.Builder clientBuilder,
+            ConnectionClientExecutorService.Builder clientBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -30,12 +30,12 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
         this.clientBuilder = clientBuilder;
     }
     
-    public ClientConnectionExecutorService.Builder getClientBuilder() {
+    public ConnectionClientExecutorService.Builder getClientBuilder() {
         return clientBuilder;
     }
 
     @SuppressWarnings("unchecked")
-    public C setClientBuilder(ClientConnectionExecutorService.Builder clientBuilder) {
+    public C setClientBuilder(ConnectionClientExecutorService.Builder clientBuilder) {
         if (this.clientBuilder == clientBuilder) {
             return (C) this;
         } else {
@@ -64,7 +64,7 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     }
 
     protected abstract C newInstance(
-            ClientConnectionExecutorService.Builder clientBuilder,
+            ConnectionClientExecutorService.Builder clientBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -79,8 +79,8 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
         return services;
     }
     
-    protected ClientConnectionExecutorService.Builder getDefaultClientBuilder() {
-        return ClientConnectionExecutorService.builder()
+    protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
+        return ConnectionClientExecutorService.builder()
                 .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
                         .setCodecFactory(ProtocolTracingCodec.factory(tracePublisher.getPublisher())))
                 .setRuntimeModule(getRuntimeModule())

@@ -8,7 +8,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
-import edu.uw.zookeeper.client.ClientConnectionExecutorService;
+import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.random.ConstantGenerator;
@@ -64,7 +64,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     }
 
     protected MeasuringClientBuilder(
-            ClientConnectionExecutorService.Builder clientBuilder, 
+            ConnectionClientExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -74,7 +74,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
 
     @Override
     protected MeasuringClientBuilder newInstance(
-            ClientConnectionExecutorService.Builder clientBuilder, 
+            ConnectionClientExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
             ObjectMapper mapper,
@@ -126,8 +126,8 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     }
     
     @Override
-    protected ClientConnectionExecutorService.Builder getDefaultClientBuilder() {
-        return ClientConnectionExecutorService.builder()
+    protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
+        return ConnectionClientExecutorService.builder()
                 .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
                         .setCodecFactory(OperationTracingCodec.factory(tracePublisher.getPublisher())))
                 .setRuntimeModule(getRuntimeModule())
