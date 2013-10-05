@@ -41,7 +41,7 @@ import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
-import edu.uw.zookeeper.protocol.client.AbstractConnectionClientExecutor;
+import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<Service>, ThroughputClientsBuilder> {
@@ -191,13 +191,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
             @Override
             public void run() {
                 try {
-                    List<AbstractConnectionClientExecutor<Operation.Request, ?, ?>> executors = Lists.newArrayListWithCapacity(nclients);
+                    List<ConnectionClientExecutor<Operation.Request, ?>> executors = Lists.newArrayListWithCapacity(nclients);
                     for (int i=0; i<nclients; ++i) {
                         executors.add(connectionBuilder.getClientConnectionExecutors().get().get());
                     }
                     
                     List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
-                    for (AbstractConnectionClientExecutor<Operation.Request, ?, ?> e: executors) {
+                    for (ConnectionClientExecutor<Operation.Request, ?> e: executors) {
                         IterationCallable<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> task = IterationCallable.create(
                                 iterations, logInterval,
                                 SubmitCallable.create(

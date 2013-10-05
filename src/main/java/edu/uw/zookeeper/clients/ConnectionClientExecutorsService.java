@@ -46,15 +46,15 @@ import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
 import edu.uw.zookeeper.protocol.ProtocolRequestMessage;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.Session;
-import edu.uw.zookeeper.protocol.client.AbstractConnectionClientExecutor;
+import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.client.OperationClientExecutor;
 
 public class ConnectionClientExecutorsService
-        <I extends Operation.Request, T, C extends AbstractConnectionClientExecutor<I,?,?>> 
+        <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?>> 
         extends AbstractIdleService 
         implements DefaultsFactory<T, ListenableFuture<C>>, Function<C, C>, Iterable<C> {
 
-    public static <I extends Operation.Request, T, C extends AbstractConnectionClientExecutor<I,?,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
+    public static <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
             DefaultsFactory<T, ? extends ListenableFuture<? extends C>> factory) {
         return new ConnectionClientExecutorsService<I,T,C>(factory);
     }
@@ -286,8 +286,8 @@ public class ConnectionClientExecutorsService
         for (C c: this) {
             ListenableFuture<Message.ServerResponse<?>> future = null;
             try {
-                if ((c.get().codec().state() == ProtocolState.CONNECTED) && 
-                        (c.get().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
+                if ((c.connection().codec().state() == ProtocolState.CONNECTED) && 
+                        (c.connection().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
                     future = c.submit(disconnect);
                 } else {
                     future = null;
@@ -311,7 +311,7 @@ public class ConnectionClientExecutorsService
             } catch (Exception e) {
                 logger.debug("", e);
             } finally {
-                future.first().stop();
+                future.first().connection().close();
             }
         }
     }
@@ -325,7 +325,7 @@ public class ConnectionClientExecutorsService
             executors.add(instance);
             instance.register(this);
             if (! isRunning()) {
-                instance.get().close();
+                instance.connection().close();
                 throw new IllegalStateException(String.valueOf(state()));
             }
         }
