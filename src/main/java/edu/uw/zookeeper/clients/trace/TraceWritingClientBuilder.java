@@ -90,7 +90,7 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().getConfiguration(), 
-                clientBuilder.getClientConnectionExecutor());
+                clientBuilder.getConnectionClientExecutor());
     }
     
     protected abstract Runnable getDefaultRunnable();

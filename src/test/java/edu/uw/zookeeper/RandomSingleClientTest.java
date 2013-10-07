@@ -39,7 +39,7 @@ public class RandomSingleClientTest {
         
         ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache = 
                 ZNodeViewCache.newInstance( 
-                        client.getClientBuilder().getClientConnectionExecutor());
+                        client.getClientBuilder().getConnectionClientExecutor());
         int iterations = 100;
         Generator<Records.Request> requests = BasicRequestGenerator.create(cache);
         ListAccumulator<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> accumulator = ListAccumulator.create(

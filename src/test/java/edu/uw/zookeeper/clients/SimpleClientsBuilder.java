@@ -76,9 +76,9 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
     }
 
     @Override
-    public SimpleClientsBuilder setClientConnectionExecutors(
+    public SimpleClientsBuilder setConnectionClientExecutors(
             ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors) {
-        return (SimpleClientsBuilder) super.setClientConnectionExecutors(clientExecutors);
+        return (SimpleClientsBuilder) super.setConnectionClientExecutors(clientExecutors);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
     }
 
     @Override    
-    protected ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> getDefaultClientConnectionExecutorsService() {
+    protected ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> getDefaultConnectionClientExecutorsService() {
         ServerViewFactory<Session, ? extends OperationClientExecutor<?>> factory = 
                 ServerViewFactory.newInstance(
                         clientConnectionFactory, 

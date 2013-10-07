@@ -50,11 +50,11 @@ import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.client.OperationClientExecutor;
 
 public class ConnectionClientExecutorsService
-        <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?>> 
+        <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?>> 
         extends AbstractIdleService 
         implements DefaultsFactory<T, ListenableFuture<C>>, Function<C, C>, Iterable<C> {
 
-    public static <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
+    public static <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
             DefaultsFactory<T, ? extends ListenableFuture<? extends C>> factory) {
         return new ConnectionClientExecutorsService<I,T,C>(factory);
     }
@@ -125,12 +125,12 @@ public class ConnectionClientExecutorsService
             }
         }
         
-        public T getClientConnectionExecutors() {
+        public T getConnectionClientExecutors() {
             return clientExecutors;
         }
 
         @SuppressWarnings("unchecked")
-        public C setClientConnectionExecutors(
+        public C setConnectionClientExecutors(
                 T clientExecutors) {
             if (this.clientExecutors == clientExecutors) {
                 return (C) this;
@@ -155,7 +155,7 @@ public class ConnectionClientExecutorsService
                 return setClientConnectionFactory(getDefaultClientConnectionFactory()).setDefaults();
             }
             if (clientExecutors == null) {
-                return setClientConnectionExecutors(getDefaultClientConnectionExecutorsService()).setDefaults();
+                return setConnectionClientExecutors(getDefaultConnectionClientExecutorsService()).setDefaults();
             }
             return (C) this;
         }
@@ -186,7 +186,7 @@ public class ConnectionClientExecutorsService
             return connectionBuilder.build();
         }
 
-        protected abstract T getDefaultClientConnectionExecutorsService();
+        protected abstract T getDefaultConnectionClientExecutorsService();
     }
     
     public static class OperationBuilder extends AbstractBuilder<ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>>, OperationBuilder> {
@@ -209,7 +209,7 @@ public class ConnectionClientExecutorsService
         }
 
         @Override
-        protected ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> getDefaultClientConnectionExecutorsService() {
+        protected ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> getDefaultConnectionClientExecutorsService() {
             EnsembleView<ServerInetAddressView> ensemble = ConfigurableEnsembleView.get(getRuntimeModule().getConfiguration());
             final EnsembleViewFactory<? extends ServerViewFactory<Session, ? extends OperationClientExecutor<?>>> ensembleFactory = 
                     EnsembleViewFactory.fromSession(
@@ -281,10 +281,10 @@ public class ConnectionClientExecutorsService
         @SuppressWarnings("unchecked")
         I disconnect = (I) ProtocolRequestMessage.of(0, 
                 Operations.Requests.disconnect().build());
-        List<Pair<C, ListenableFuture<Message.ServerResponse<?>>>> futures = 
+        List<Pair<C, ListenableFuture<? extends Message.ServerResponse<?>>>> futures = 
                 Lists.newArrayListWithExpectedSize(executors.size());
         for (C c: this) {
-            ListenableFuture<Message.ServerResponse<?>> future = null;
+            ListenableFuture<? extends Message.ServerResponse<?>> future = null;
             try {
                 if ((c.connection().codec().state() == ProtocolState.CONNECTED) && 
                         (c.connection().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
@@ -295,10 +295,10 @@ public class ConnectionClientExecutorsService
             } catch (Exception e) {
                 future = Futures.immediateFailedFuture(e);
             }
-            futures.add(Pair.create(c, future));
+            futures.add(Pair.<C, ListenableFuture<? extends Message.ServerResponse<?>>>create(c, future));
         }
         
-        for (Pair<C, ListenableFuture<Message.ServerResponse<?>>> future: futures) {
+        for (Pair<C, ListenableFuture<? extends Message.ServerResponse<?>>> future: futures) {
             try {
                 if (future.second() != null) {
                     int timeOut = future.first().session().get().getTimeOut();

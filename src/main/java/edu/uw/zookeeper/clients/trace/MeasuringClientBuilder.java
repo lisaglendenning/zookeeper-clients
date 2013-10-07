@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigValueType;
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.clients.common.Generator;
-import edu.uw.zookeeper.clients.random.ConstantGenerator;
+import edu.uw.zookeeper.clients.common.Generators;
 import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
@@ -136,6 +136,6 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
 
     @Override
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(ConstantGenerator.of(ZNodeLabel.Path.root()));
+        return PathedRequestGenerator.exists(Generators.constant(ZNodeLabel.Path.root()));
     }
 }

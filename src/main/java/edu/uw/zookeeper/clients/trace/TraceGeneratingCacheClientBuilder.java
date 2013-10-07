@@ -112,7 +112,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
 
     protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
         return ZNodeViewCache.newInstance(
-                clientBuilder.getClientConnectionExecutor());
+                clientBuilder.getConnectionClientExecutor());
     }
 
     @Override

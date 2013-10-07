@@ -23,10 +23,10 @@ import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.ConnectionClientExecutorsService;
 import edu.uw.zookeeper.clients.common.Generator;
+import edu.uw.zookeeper.clients.common.Generators;
 import edu.uw.zookeeper.clients.common.IterationCallable;
 import edu.uw.zookeeper.clients.common.RunnableService;
 import edu.uw.zookeeper.clients.common.SubmitCallable;
-import edu.uw.zookeeper.clients.random.ConstantGenerator;
 import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
@@ -177,7 +177,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     
 
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(ConstantGenerator.of(ZNodeLabel.Path.root()));
+        return PathedRequestGenerator.exists(Generators.constant(ZNodeLabel.Path.root()));
     }
     
     protected Runnable getDefaultRunnable() {
@@ -191,14 +191,14 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
             @Override
             public void run() {
                 try {
-                    List<ConnectionClientExecutor<Operation.Request, ?>> executors = Lists.newArrayListWithCapacity(nclients);
+                    List<ConnectionClientExecutor<Operation.Request, ?, ?>> executors = Lists.newArrayListWithCapacity(nclients);
                     for (int i=0; i<nclients; ++i) {
-                        executors.add(connectionBuilder.getClientConnectionExecutors().get().get());
+                        executors.add(connectionBuilder.getConnectionClientExecutors().get().get());
                     }
                     
                     List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
-                    for (ConnectionClientExecutor<Operation.Request, ?> e: executors) {
-                        IterationCallable<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> task = IterationCallable.create(
+                    for (ConnectionClientExecutor<Operation.Request, ?, ?> e: executors) {
+                        IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>> task = IterationCallable.create(
                                 iterations, logInterval,
                                 SubmitCallable.create(
                                         generator, 
@@ -224,13 +224,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
         };
     }
     
-    protected static class Client extends PromiseTask<IterationCallable<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>>, Void> implements Runnable, FutureCallback<Object> {
+    protected static class Client extends PromiseTask<IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>>, Void> implements Runnable, FutureCallback<Object> {
         
         protected final ListeningExecutorService executor;
         
         public Client(
                 ListeningExecutorService executor,
-                IterationCallable<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> task,
+                IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>> task,
                 Promise<Void> promise) {
             super(task, promise);
             this.executor = executor;
