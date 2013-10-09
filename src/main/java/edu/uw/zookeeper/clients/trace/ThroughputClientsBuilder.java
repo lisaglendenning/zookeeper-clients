@@ -39,7 +39,6 @@ import edu.uw.zookeeper.common.PromiseTask;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.ZNodeLabel;
-import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.proto.Records;
@@ -198,7 +197,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                     
                     List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
                     for (ConnectionClientExecutor<Operation.Request, ?, ?> e: executors) {
-                        IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>> task = IterationCallable.create(
+                        IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task = IterationCallable.create(
                                 iterations, logInterval,
                                 SubmitCallable.create(
                                         generator, 
@@ -224,13 +223,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
         };
     }
     
-    protected static class Client extends PromiseTask<IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>>, Void> implements Runnable, FutureCallback<Object> {
+    protected static class Client extends PromiseTask<IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>>, Void> implements Runnable, FutureCallback<Object> {
         
         protected final ListeningExecutorService executor;
         
         public Client(
                 ListeningExecutorService executor,
-                IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Message.ServerResponse<?>>>> task,
+                IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task,
                 Promise<Void> promise) {
             super(task, promise);
             this.executor = executor;

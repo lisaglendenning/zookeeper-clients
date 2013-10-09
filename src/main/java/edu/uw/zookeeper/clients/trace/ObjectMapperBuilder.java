@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.uw.zookeeper.clients.Version;
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestDeserializer;
 import edu.uw.zookeeper.jackson.databind.ProtocolRequestSerializer;
-import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.Message;
 
 public class ObjectMapperBuilder extends edu.uw.zookeeper.jackson.databind.ObjectMapperBuilder {
 
@@ -68,8 +68,8 @@ public class ObjectMapperBuilder extends edu.uw.zookeeper.jackson.databind.Objec
         @Override
         protected Map<Class<?>, JsonDeserializer<?>> getDefaultDeserializers() {
             return ImmutableMap.<Class<?>, JsonDeserializer<?>>of(
-                    Operation.ProtocolRequest.class, ProtocolRequestDeserializer.create(),
-                    Operation.ProtocolResponse.class, ProtocolResponseHeaderDeserializer.create(),
+                    Message.ClientRequest.class, ProtocolRequestDeserializer.create(),
+                    Message.ServerResponse.class, ProtocolResponseHeaderDeserializer.create(),
                     TraceEventHeader.class, TraceEventHeader.deserializer());
         }
     }

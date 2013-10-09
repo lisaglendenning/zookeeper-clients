@@ -3,6 +3,7 @@ package edu.uw.zookeeper.clients.trace;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -14,22 +15,23 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Objects;
 
-import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.Message;
 
 @TraceEventType(TraceEventTag.PROTOCOL_REQUEST_EVENT)
 @JsonSerialize(using=ProtocolRequestEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
 @JsonDeserialize(using=ProtocolRequestEvent.Deserializer.class)
 public final class ProtocolRequestEvent implements TraceEvent {
 
-    public static ProtocolRequestEvent create(long sessionId, Operation.ProtocolRequest<?> request) {
+    public static ProtocolRequestEvent create(
+            long sessionId, Message.ClientRequest<?> request) {
         return new ProtocolRequestEvent(sessionId, request);
     }
 
     private final long sessionId;
-    private final Operation.ProtocolRequest<?> request;
+    private final Message.ClientRequest<?> request;
 
     public ProtocolRequestEvent(long sessionId, 
-            Operation.ProtocolRequest<?> request) {
+            Message.ClientRequest<?> request) {
         this.sessionId = sessionId;
         this.request = checkNotNull(request);
     }
@@ -43,7 +45,7 @@ public final class ProtocolRequestEvent implements TraceEvent {
         return sessionId;
     }
     
-    public Operation.ProtocolRequest<?> getRequest() {
+    public Message.ClientRequest<?> getRequest() {
         return request;
     }
     
@@ -119,7 +121,7 @@ public final class ProtocolRequestEvent implements TraceEvent {
             }
             long sessionId = json.getLongValue();
             json.clearCurrentToken();
-            Operation.ProtocolRequest<?> request = (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
+            Message.ClientRequest<?> request = (Message.ClientRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Message.ClientRequest.class), null).deserialize(json, ctxt);
             if (json.hasCurrentToken()) {
                 json.clearCurrentToken();
             }

@@ -6,12 +6,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+
 import edu.uw.zookeeper.jackson.JacksonInputArchive;
-import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolResponseMessage;
 import edu.uw.zookeeper.protocol.proto.OpCode;
 
-public class ProtocolResponseHeaderDeserializer extends ListDeserializer<Operation.ProtocolResponse<?>> {
+public class ProtocolResponseHeaderDeserializer extends ListDeserializer<Message.ServerResponse<?>> {
 
     public static ProtocolResponseHeaderDeserializer create() {
         return new ProtocolResponseHeaderDeserializer();
@@ -20,11 +21,11 @@ public class ProtocolResponseHeaderDeserializer extends ListDeserializer<Operati
     private static final long serialVersionUID = -8230711507540547370L;
 
     public ProtocolResponseHeaderDeserializer() {
-        super(Operation.ProtocolResponse.class);
+        super(Message.ServerResponse.class);
     }
 
     @Override
-    protected Operation.ProtocolResponse<?> deserializeValue(JsonParser json,
+    protected ProtocolResponseMessage<?> deserializeValue(JsonParser json,
             DeserializationContext ctxt) throws IOException,
             JsonProcessingException {
         JsonToken token = json.getCurrentToken();

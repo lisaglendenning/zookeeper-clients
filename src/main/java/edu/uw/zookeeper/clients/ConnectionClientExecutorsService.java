@@ -281,10 +281,10 @@ public class ConnectionClientExecutorsService
         @SuppressWarnings("unchecked")
         I disconnect = (I) ProtocolRequestMessage.of(0, 
                 Operations.Requests.disconnect().build());
-        List<Pair<C, ListenableFuture<? extends Message.ServerResponse<?>>>> futures = 
+        List<Pair<C, ListenableFuture<? extends Operation.ProtocolResponse<?>>>> futures = 
                 Lists.newArrayListWithExpectedSize(executors.size());
         for (C c: this) {
-            ListenableFuture<? extends Message.ServerResponse<?>> future = null;
+            ListenableFuture<? extends Operation.ProtocolResponse<?>> future = null;
             try {
                 if ((c.connection().codec().state() == ProtocolState.CONNECTED) && 
                         (c.connection().state().compareTo(Connection.State.CONNECTION_CLOSING) < 0)) {
@@ -295,10 +295,10 @@ public class ConnectionClientExecutorsService
             } catch (Exception e) {
                 future = Futures.immediateFailedFuture(e);
             }
-            futures.add(Pair.<C, ListenableFuture<? extends Message.ServerResponse<?>>>create(c, future));
+            futures.add(Pair.<C, ListenableFuture<? extends Operation.ProtocolResponse<?>>>create(c, future));
         }
         
-        for (Pair<C, ListenableFuture<? extends Message.ServerResponse<?>>> future: futures) {
+        for (Pair<C, ListenableFuture<? extends Operation.ProtocolResponse<?>>> future: futures) {
             try {
                 if (future.second() != null) {
                     int timeOut = future.first().session().get().getTimeOut();

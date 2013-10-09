@@ -3,6 +3,7 @@ package edu.uw.zookeeper.clients.trace;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -14,22 +15,22 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Objects;
 
-import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.Message;
 
 @TraceEventType(TraceEventTag.PROTOCOL_RESPONSE_EVENT)
 @JsonSerialize(using=ProtocolResponseEvent.Serializer.class, typing=JsonSerialize.Typing.STATIC)
 @JsonDeserialize(using=ProtocolResponseEvent.Deserializer.class)
 public final class ProtocolResponseEvent implements TraceEvent {
 
-    public static ProtocolResponseEvent create(long sessionId, Operation.ProtocolResponse<?> response) {
+    public static ProtocolResponseEvent create(long sessionId, Message.ServerResponse<?> response) {
         return new ProtocolResponseEvent(sessionId, response);
     }
 
     private final long sessionId;
-    private final Operation.ProtocolResponse<?> response;
+    private final Message.ServerResponse<?> response;
 
     public ProtocolResponseEvent(long sessionId, 
-            Operation.ProtocolResponse<?> response) {
+            Message.ServerResponse<?> response) {
         this.sessionId = sessionId;
         this.response = checkNotNull(response);
     }
@@ -43,7 +44,7 @@ public final class ProtocolResponseEvent implements TraceEvent {
         return sessionId;
     }
     
-    public Operation.ProtocolResponse<?> getResponse() {
+    public Message.ServerResponse<?> getResponse() {
         return response;
     }
     
@@ -119,7 +120,7 @@ public final class ProtocolResponseEvent implements TraceEvent {
             }
             long sessionId = json.getLongValue();
             json.clearCurrentToken();
-            Operation.ProtocolResponse<?> response = (Operation.ProtocolResponse<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolResponse.class), null).deserialize(json, ctxt);
+            Message.ServerResponse<?> response = (Message.ServerResponse<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Message.ServerResponse.class), null).deserialize(json, ctxt);
             if (json.hasCurrentToken()) {
                 json.clearCurrentToken();
             }
