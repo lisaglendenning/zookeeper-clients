@@ -106,24 +106,24 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     @Override
     protected List<Service> doBuild() {
         List<Service> services = super.doBuild();
-        services.add(services.size() - 1, new FetchCacheService(cache));
+        services.add(services.size() - 1, new FetchCacheService(getCache()));
         return services;
     }
 
     protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
         return ZNodeViewCache.newInstance(
-                clientBuilder.getConnectionClientExecutor());
+                getClientBuilder().getConnectionClientExecutor());
     }
 
     @Override
     protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().getConfiguration(), 
-                cache);
+                getCache());
     }
 
     @Override
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return BasicRequestGenerator.create(cache);
+        return BasicRequestGenerator.create(getCache());
     }
 }

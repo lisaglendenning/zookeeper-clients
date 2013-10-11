@@ -103,7 +103,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     
     @Override
     protected TraceEventPublisherService getDefaultTracePublisher() {
-        TraceWriter writer = writerBuilder.build();
+        TraceWriter writer = getDefaultTraceWriter();
         final Set<TraceEventTag> types = writer.header().getTypes();
         Predicate<TraceEvent> filter = new Predicate<TraceEvent>() {
             @Override
@@ -129,7 +129,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
         return ConnectionClientExecutorService.builder()
                 .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
-                        .setCodecFactory(OperationTracingCodec.factory(tracePublisher.getPublisher())))
+                        .setCodecFactory(OperationTracingCodec.factory(getTracePublisher().getPublisher())))
                 .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }

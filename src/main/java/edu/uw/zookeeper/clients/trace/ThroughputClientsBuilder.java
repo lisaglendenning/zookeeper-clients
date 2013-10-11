@@ -127,8 +127,8 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     @Override
     protected List<Service> doBuild() {
         List<Service> services = Lists.newArrayList();
-        services.add(tracePublisher);
-        services.addAll(connectionBuilder.build());
+        services.add(getTracePublisher());
+        services.addAll(getConnectionBuilder().build());
         services.add(RunnableService.create(getDefaultRunnable()));
         return services;
     }
@@ -143,7 +143,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     
     @Override
     protected TraceEventPublisherService getDefaultTracePublisher() {
-        TraceWriter writer = writerBuilder.build();
+        TraceWriter writer = getDefaultTraceWriter();
         final Set<TraceEventTag> types = writer.header().getTypes();
         Predicate<TraceEvent> filter = new Predicate<TraceEvent>() {
             @Override
@@ -162,15 +162,15 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     
     protected ClientConnectionFactoryBuilder getDefaultClientConnectionFactoryBuilder() {
         return ClientConnectionFactoryBuilder.defaults()
-                .setCodecFactory(OperationTracingCodec.factory(tracePublisher.getPublisher()))
-                .setRuntimeModule(runtime)
+                .setCodecFactory(OperationTracingCodec.factory(getTracePublisher().getPublisher()))
+                .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }
     
     protected ConnectionClientExecutorsService.OperationBuilder getDefaultConnectionBuilder() {
         return ConnectionClientExecutorsService.builder()
                 .setConnectionBuilder(getDefaultClientConnectionFactoryBuilder())
-                .setRuntimeModule(runtime)
+                .setRuntimeModule(getRuntimeModule())
                 .setDefaults(); 
     }
     

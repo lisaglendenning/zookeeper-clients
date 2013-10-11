@@ -39,18 +39,20 @@ public class CsvExport implements Application {
         ImmutableList.Builder<Application> exporters = ImmutableList.builder();
         boolean latencies = LatencySeriesConfiguration.get(builder.getRuntimeModule().getConfiguration());
         boolean operations = OperationsSeriesConfiguration.get(builder.getRuntimeModule().getConfiguration());
-        try {
-            TraceEventIterator events = TraceEventIterator.forFile(builder.getInputFile(), builder.getObjectMapper().reader());
-            TraceHeader header = events.header();
-            events.close();
-            if (! header.getTypes().contains(TraceEventTag.LATENCY_MEASUREMENT_EVENT)) {
-                latencies = false;
+        if (! builder.getRuntimeModule().getConfiguration().getArguments().helpOptionSet()) {
+            try {
+                TraceEventIterator events = TraceEventIterator.forFile(builder.getInputFile(), builder.getObjectMapper().reader());
+                TraceHeader header = events.header();
+                events.close();
+                if (! header.getTypes().contains(TraceEventTag.LATENCY_MEASUREMENT_EVENT)) {
+                    latencies = false;
+                }
+                if (! header.getTypes().contains(TraceEventTag.THROUGHPUT_MEASUREMENT_EVENT)) {
+                    operations = false;
+                }
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
             }
-            if (! header.getTypes().contains(TraceEventTag.THROUGHPUT_MEASUREMENT_EVENT)) {
-                operations = false;
-            }
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
         }
         if (latencies) {
             exporters.add(new ExportLatencySeries());

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.sun.xml.internal.xsom.impl.scd.Iterators;
 
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
@@ -71,14 +72,18 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
     }
 
     protected Iterator<Records.Request> getDefaultRequests() {
-        ObjectReader reader = mapper.reader();
+        ObjectReader reader = getObjectMapper().reader();
         File file = Tracing.getTraceInputFileConfiguration(getRuntimeModule().getConfiguration());
-        logger.info("Trace input: {}", file);
         Iterator<TraceEvent> events;
-        try {
-            events = TraceEventIterator.forFile(file, reader);
-        } catch (IOException e) {
-            throw Throwables.propagate(e);
+        if (getRuntimeModule().getConfiguration().getArguments().helpOptionSet()) {
+            events = Iterators.empty();
+        } else {
+            logger.info("Trace input: {}", file);
+            try {
+                events = TraceEventIterator.forFile(file, reader);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
         }
         return TraceRequestIterator.requestsOf(TraceRequestIterator.from(events));
     }

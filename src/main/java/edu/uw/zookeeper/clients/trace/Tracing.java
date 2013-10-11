@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValueType;
@@ -254,9 +256,8 @@ public abstract class Tracing {
         }
 
         protected TraceWriterBuilder getDefaultWriterBuilder() {
-            ObjectWriter writer = mapper.writer();
+            ObjectWriter writer = getObjectMapper().writer();
             File file = Tracing.getTraceOutputFileConfiguration(getRuntimeModule().getConfiguration());
-            logger.info("Trace output: {}", file);
             Executor executor = getRuntimeModule().getExecutors().get(ExecutorService.class);
             TraceHeader header = getDefaultTraceHeader();
             return TraceWriterBuilder.defaults()
@@ -266,10 +267,27 @@ public abstract class Tracing {
                     .setFile(file);
         }
         
+        protected TraceWriter getDefaultTraceWriter() {
+            if (getRuntimeModule().getConfiguration().getArguments().helpOptionSet()) {
+                try {
+                    return TraceWriter.create(
+                            getTraceWriterBuilder().getWriter().getFactory().createGenerator(new StringWriter()), 
+                            getTraceWriterBuilder().getWriter(), 
+                            getTraceWriterBuilder().getHeader(),
+                            getTraceWriterBuilder().getExecutor());
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
+            } else {
+                logger.info("Trace output: {}", getTraceWriterBuilder().getFile());
+                return getTraceWriterBuilder().build();
+            }
+        }
+        
         protected TraceEventPublisherService getDefaultTracePublisher() {
             return TraceEventPublisherService.newInstance(
                     EventBusPublisher.newInstance(), 
-                    writerBuilder.build());
+                    getDefaultTraceWriter());
         }
     }
 }

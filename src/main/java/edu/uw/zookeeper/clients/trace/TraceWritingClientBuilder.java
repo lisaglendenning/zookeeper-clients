@@ -73,8 +73,8 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     @Override
     protected List<Service> doBuild() {
         List<Service> services = Lists.newLinkedList();
-        services.add(tracePublisher);
-        services.addAll(clientBuilder.build());
+        services.add(getTracePublisher());
+        services.addAll(getClientBuilder().build());
         services.add(RunnableService.create(getDefaultRunnable()));
         return services;
     }
@@ -82,7 +82,7 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
         return ConnectionClientExecutorService.builder()
                 .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
-                        .setCodecFactory(ProtocolTracingCodec.factory(tracePublisher.getPublisher())))
+                        .setCodecFactory(ProtocolTracingCodec.factory(getTracePublisher().getPublisher())))
                 .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }
@@ -90,7 +90,7 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().getConfiguration(), 
-                clientBuilder.getConnectionClientExecutor());
+                getClientBuilder().getConnectionClientExecutor());
     }
     
     protected abstract Runnable getDefaultRunnable();
