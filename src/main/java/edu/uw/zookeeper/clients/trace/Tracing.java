@@ -58,10 +58,18 @@ public abstract class Tracing {
                     configuration.withConfigurable(configurable)
                         .getConfigOrEmpty(configurable.path())
                             .getString(configurable.key());
+            if (new File(value).isDirectory()) {
+                StringBuilder str = new StringBuilder(value);
+                if (str.charAt(str.length() - 1) != File.separatorChar) {
+                    str.append(File.separatorChar);
+                }
+                value = str.append(getClass().getAnnotation(Configurable.class).value()).toString();
+            }
             if (value.indexOf('%') != -1) {
                 value = String.format(value, System.currentTimeMillis());
             }
-            return new File(value).getAbsoluteFile();
+            File file = new File(value).getAbsoluteFile();
+            return file;
         }   
     }
     
