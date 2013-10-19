@@ -28,7 +28,7 @@ import edu.uw.zookeeper.protocol.proto.Records;
 @RunWith(JUnit4.class)
 public class RandomSingleClientTest {
     
-    @Test(timeout=10000)
+    @Test(timeout=30000)
     public void testRandom() throws Exception {
         SimpleServerAndClient client = SimpleServerAndClient.defaults().setDefaults();
         ServiceMonitor monitor = client.getRuntimeModule().getServiceMonitor();
