@@ -1,13 +1,15 @@
 package edu.uw.zookeeper;
 
+import net.engio.mbassy.PubSubSupport;
+import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.SyncMessageBus;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.uw.zookeeper.client.ClientExecutor;
-import edu.uw.zookeeper.common.EventBusPublisher;
 import edu.uw.zookeeper.common.Processors;
 import edu.uw.zookeeper.common.Promise;
-import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.TxnOperation;
 import edu.uw.zookeeper.data.ZNodeDataTrie;
@@ -23,24 +25,25 @@ import edu.uw.zookeeper.protocol.server.ToTxnRequestProcessor;
 import edu.uw.zookeeper.protocol.server.ZxidGenerator;
 import edu.uw.zookeeper.protocol.server.ZxidIncrementer;
 
-public class ZNodeDataTrieExecutor implements Publisher, ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>>,
+public class ZNodeDataTrieExecutor implements PubSubSupport<Object>, ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>>,
         Processors.UncheckedProcessor<SessionOperation.Request<?>, Message.ServerResponse<?>> {
 
+    @SuppressWarnings("rawtypes")
     public static ZNodeDataTrieExecutor create() {
         return create(
                 ZNodeDataTrie.newInstance(),
                 ZxidIncrementer.fromZero(),
-                EventBusPublisher.newInstance());
+                new SyncMessageBus<Object>(new SyncBusConfiguration()));
     }
 
     public static ZNodeDataTrieExecutor create(
             ZNodeDataTrie trie,
             ZxidGenerator zxids,
-            Publisher publisher) {
+            PubSubSupport<Object> publisher) {
         return new ZNodeDataTrieExecutor(trie, zxids, publisher);
     }
     
-    protected final Publisher publisher;
+    protected final PubSubSupport<Object> publisher;
     protected final ZNodeDataTrie trie;
     protected final RequestErrorProcessor<TxnOperation.Request<?>> operator;
     protected final ToTxnRequestProcessor txnProcessor;
@@ -48,7 +51,7 @@ public class ZNodeDataTrieExecutor implements Publisher, ClientExecutor<SessionO
     public ZNodeDataTrieExecutor(
             ZNodeDataTrie trie,
             ZxidGenerator zxids,
-            Publisher publisher) {
+            PubSubSupport<Object> publisher) {
         this.trie = trie;
         this.publisher = publisher;
         this.txnProcessor = ToTxnRequestProcessor.create(
@@ -77,22 +80,22 @@ public class ZNodeDataTrieExecutor implements Publisher, ClientExecutor<SessionO
     public synchronized Message.ServerResponse<?> apply(SessionOperation.Request<?> input) {
         TxnOperation.Request<?> request = txnProcessor.apply(input);
         Message.ServerResponse<Records.Response> response = ProtocolResponseMessage.of(request.xid(), request.zxid(), operator.apply(request));
-        post(response);
+        publish(response);
         return response;
     }
 
     @Override
-    public void register(Object handler) {
-        publisher.register(handler);
+    public void subscribe(Object handler) {
+        publisher.subscribe(handler);
     }
 
     @Override
-    public void unregister(Object handler) {
-        publisher.unregister(handler);
+    public boolean unsubscribe(Object handler) {
+        return publisher.unsubscribe(handler);
     }
     
     @Override
-    public void post(Object event) {
-        publisher.post(event);
+    public void publish(Object event) {
+        publisher.publish(event);
     }
 }

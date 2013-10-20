@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
+import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.SyncMessageBus;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +28,6 @@ import com.typesafe.config.ConfigValueType;
 import edu.uw.zookeeper.ZooKeeperApplication;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
-import edu.uw.zookeeper.common.EventBusPublisher;
 import edu.uw.zookeeper.common.RuntimeModule;
 
 public abstract class Tracing {
@@ -292,9 +294,10 @@ public abstract class Tracing {
             }
         }
         
+        @SuppressWarnings("rawtypes")
         protected TraceEventPublisherService getDefaultTracePublisher() {
             return TraceEventPublisherService.newInstance(
-                    EventBusPublisher.newInstance(), 
+                    new SyncMessageBus<Object>(new SyncBusConfiguration()), 
                     getDefaultTraceWriter());
         }
     }

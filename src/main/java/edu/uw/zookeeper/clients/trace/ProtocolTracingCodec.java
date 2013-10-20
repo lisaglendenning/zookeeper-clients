@@ -4,12 +4,13 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
+import net.engio.mbassy.PubSubSupport;
+
 import com.google.common.base.Optional;
 
 import edu.uw.zookeeper.protocol.Session;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ParameterizedFactory;
-import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.protocol.ConnectMessage;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolCodec;
@@ -18,12 +19,12 @@ import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
 
 public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
-    public static ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, ProtocolTracingCodec>> factory(
-            final Publisher publisher) {
-        return new ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, ProtocolTracingCodec>>() {
+    public static ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, ProtocolTracingCodec>> factory(
+            final PubSubSupport<Object> publisher) {
+        return new ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, ProtocolTracingCodec>>() {
             @Override
             public Pair<Class<Message.ClientSession>, ProtocolTracingCodec> get(
-                    Publisher value) {
+                    PubSubSupport<Object> value) {
                 return Pair.create(Message.ClientSession.class,
                         ProtocolTracingCodec.newInstance(publisher,
                                 ClientProtocolCodec.newInstance(value)));
@@ -32,12 +33,12 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
     }
     
     public static ProtocolTracingCodec newInstance(
-            Publisher publisher) {
+            PubSubSupport<Object> publisher) {
         return newInstance(publisher, ClientProtocolCodec.newInstance(publisher));
     }
     
     public static ProtocolTracingCodec newInstance(
-            Publisher publisher,
+            PubSubSupport<Object> publisher,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
         return new ProtocolTracingCodec(
                 publisher,
@@ -45,11 +46,11 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
     }
     
     private final ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate;
-    private final Publisher publisher;
+    private final PubSubSupport<Object> publisher;
     private volatile long sessionId;
     
     public ProtocolTracingCodec( 
-            Publisher publisher,
+            PubSubSupport<Object> publisher,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
         this.delegate = delegate;
         this.publisher = publisher;
@@ -69,7 +70,7 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
                 default:
                 {
                     ProtocolRequestEvent event = ProtocolRequestEvent.create(sessionId, request);
-                    publisher.post(event);
+                    publisher.publish(event);
                     break;
                 }
             }
@@ -98,7 +99,7 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
                     default:
                     {
                         ProtocolResponseEvent event = ProtocolResponseEvent.create(sessionId, response);
-                        publisher.post(event);
+                        publisher.publish(event);
                         break;
                     }
                 }
@@ -113,16 +114,22 @@ public class ProtocolTracingCodec implements ProtocolCodec<Message.ClientSession
     }
 
     @Override
-    public void register(Object handler) {
-        delegate.register(handler);
-        publisher.register(handler);
+    public void publish(Object event) {
+        delegate.publish(event);
     }
 
     @Override
-    public void unregister(Object handler) {
-        delegate.unregister(handler);
+    public void subscribe(Object handler) {
+        delegate.subscribe(handler);
+        publisher.subscribe(handler);
+    }
+
+    @Override
+    public boolean unsubscribe(Object handler) {
+        boolean unsubscribed = delegate.unsubscribe(handler);
         try {
-            publisher.unregister(handler);
+            unsubscribed = publisher.unsubscribe(handler) || unsubscribed;
         } catch (IllegalArgumentException e) {}
+        return unsubscribed;
     }
 }

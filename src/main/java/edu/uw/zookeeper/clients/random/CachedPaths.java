@@ -3,9 +3,10 @@ package edu.uw.zookeeper.clients.random;
 import java.util.List;
 import java.util.Random;
 
+import net.engio.mbassy.listener.Handler;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.Subscribe;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
 import edu.uw.zookeeper.clients.common.Generator;
@@ -15,7 +16,7 @@ public class CachedPaths implements Generator<ZNodeLabel.Path> {
 
     public static CachedPaths create(ZNodeViewCache<?,?,?> cache, Random random) {
         CachedPaths instance = new CachedPaths(random, ImmutableList.<ZNodeLabel.Path>of());
-        cache.register(instance);
+        cache.subscribe(instance);
         synchronized (instance) {
             for (ZNodeViewCache.NodeCache<?> e: cache.trie()) {
                 instance.add(e.path());
@@ -55,7 +56,7 @@ public class CachedPaths implements Generator<ZNodeLabel.Path> {
         }
     }
     
-    @Subscribe
+    @Handler
     public void handleNodeUpdate(ZNodeViewCache.NodeUpdate event) {
         switch (event.type()) {
         case NODE_ADDED:

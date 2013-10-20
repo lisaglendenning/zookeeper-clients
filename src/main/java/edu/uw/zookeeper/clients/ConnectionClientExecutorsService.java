@@ -10,6 +10,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import net.engio.mbassy.listener.Handler;
+import net.engio.mbassy.listener.References;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,7 +20,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -316,6 +318,7 @@ public class ConnectionClientExecutorsService
         }
     }
     
+    @net.engio.mbassy.listener.Listener(references = References.Strong)
     protected class ClientHandler implements Reference<C> {
         
         protected final C instance;
@@ -323,7 +326,7 @@ public class ConnectionClientExecutorsService
         public ClientHandler(C instance) {
             this.instance = instance;
             executors.add(instance);
-            instance.register(this);
+            instance.subscribe(this);
             if (! isRunning()) {
                 instance.connection().close();
                 throw new IllegalStateException(String.valueOf(state()));
@@ -335,11 +338,11 @@ public class ConnectionClientExecutorsService
             return instance;
         }
 
-        @Subscribe
+        @Handler
         public void handleTransition(Automaton.Transition<?> event) {
             if (event.to() == Connection.State.CONNECTION_CLOSED) {
                 try {
-                    instance.unregister(this);
+                    instance.unsubscribe(this);
                 } catch (IllegalArgumentException e) {}
                 executors.remove(instance);
             }

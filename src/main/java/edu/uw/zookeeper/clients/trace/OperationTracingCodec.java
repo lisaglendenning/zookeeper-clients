@@ -5,15 +5,16 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Queue;
 
+import net.engio.mbassy.PubSubSupport;
+import net.engio.mbassy.listener.Handler;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
-import com.google.common.eventbus.Subscribe;
 
 import edu.uw.zookeeper.protocol.Session;
 import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ParameterizedFactory;
-import edu.uw.zookeeper.common.Publisher;
 import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.ConnectMessage;
 import edu.uw.zookeeper.protocol.Message;
@@ -24,12 +25,12 @@ import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
 public class OperationTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
 
-    public static ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, OperationTracingCodec>> factory(
-            final Publisher publisher) {
-        return new ParameterizedFactory<Publisher, Pair<Class<Message.ClientSession>, OperationTracingCodec>>() {
+    public static ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, OperationTracingCodec>> factory(
+            final PubSubSupport<Object> publisher) {
+        return new ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, OperationTracingCodec>>() {
             @Override
             public Pair<Class<Message.ClientSession>, OperationTracingCodec> get(
-                    Publisher value) {
+                    PubSubSupport<Object> value) {
                 return Pair.create(Message.ClientSession.class,
                         OperationTracingCodec.newInstance(publisher,
                                 ClientProtocolCodec.newInstance(value)));
@@ -38,12 +39,12 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
     }
     
     public static OperationTracingCodec newInstance(
-            Publisher publisher) {
+            PubSubSupport<Object> publisher) {
         return newInstance(publisher, ClientProtocolCodec.newInstance(publisher));
     }
     
     public static OperationTracingCodec newInstance(
-            Publisher publisher,
+            PubSubSupport<Object> publisher,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
         return new OperationTracingCodec(
                 publisher, 
@@ -51,13 +52,13 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
                 delegate);
     }
     
-    protected final Publisher publisher;
+    protected final PubSubSupport<Object> publisher;
     protected final Queue<RequestSentEvent> times;
     protected final ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate;
     protected volatile long sessionId;
     
     protected OperationTracingCodec(
-            Publisher publisher, 
+            PubSubSupport<Object> publisher, 
             Queue<RequestSentEvent> times,
             ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
         super();
@@ -66,7 +67,7 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
         this.delegate = delegate;
         this.sessionId = Session.UNINITIALIZED_ID;
         
-        delegate.register(this);
+        delegate.subscribe(this);
     }
 
     @Override
@@ -100,7 +101,7 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
                             times.remove(pending);
                             long latency = System.nanoTime() - pending.nanos;
                             OperationEvent event = OperationEvent.create(latency, sessionId, pending.request, response); 
-                            publisher.post(event);
+                            publisher.publish(event);
                         }
                     }
                 }
@@ -115,29 +116,35 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
     }
 
     @Override
-    public void register(Object handler) {
-        delegate.register(handler);
-        publisher.register(handler);
+    public void publish(Object event) {
+        delegate.publish(event);
     }
 
     @Override
-    public void unregister(Object handler) {
-        delegate.unregister(handler);
+    public void subscribe(Object handler) {
+        delegate.subscribe(handler);
+        publisher.subscribe(handler);
+    }
+
+    @Override
+    public boolean unsubscribe(Object handler) {
+        boolean unsubscribed = delegate.unsubscribe(handler);
         try {
-            publisher.unregister(handler);
+            unsubscribed = publisher.unsubscribe(handler) || unsubscribed;
         } catch (IllegalArgumentException e) {}
+        return unsubscribed;
     }
     
-    @Subscribe
+    @Handler
     public void handleTransition(Automaton.Transition<?> event) {
         if (event.to() == Connection.State.CONNECTION_CLOSED) {
             try {
-                delegate.unregister(this);
+                delegate.unsubscribe(this);
             } catch (IllegalArgumentException e) {}
             
             RequestSentEvent pending;
             while ((pending = times.poll()) != null) {
-                publisher.post(OperationEvent.timeout(sessionId, pending.request));
+                publisher.publish(OperationEvent.timeout(sessionId, pending.request));
             }
         }
     }

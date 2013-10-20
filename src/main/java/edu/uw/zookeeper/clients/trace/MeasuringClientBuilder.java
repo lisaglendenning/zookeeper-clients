@@ -2,6 +2,9 @@ package edu.uw.zookeeper.clients.trace;
 
 import java.util.Set;
 
+import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.SyncMessageBus;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -16,7 +19,6 @@ import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
-import edu.uw.zookeeper.common.EventBusPublisher;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.proto.Records;
@@ -101,6 +103,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
                 types.build());
     }
     
+    @SuppressWarnings("rawtypes")
     @Override
     protected TraceEventPublisherService getDefaultTracePublisher() {
         TraceWriter writer = getDefaultTraceWriter();
@@ -121,7 +124,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
                     getRuntimeModule().getConfiguration(), actor);
         }
         return TraceEventPublisherService.newInstance(
-                EventBusPublisher.newInstance(), 
+                new SyncMessageBus<Object>(new SyncBusConfiguration()), 
                 actor);
     }
     
