@@ -19,9 +19,9 @@ import edu.uw.zookeeper.protocol.ProtocolResponseMessage;
 import edu.uw.zookeeper.protocol.SessionOperation;
 import edu.uw.zookeeper.protocol.proto.Records;
 import edu.uw.zookeeper.protocol.server.AssignZxidProcessor;
-import edu.uw.zookeeper.protocol.server.ByOpcodeTxnRequestProcessor;
-import edu.uw.zookeeper.protocol.server.RequestErrorProcessor;
-import edu.uw.zookeeper.protocol.server.ToTxnRequestProcessor;
+import edu.uw.zookeeper.server.ByOpcodeTxnRequestProcessor;
+import edu.uw.zookeeper.server.RequestErrorProcessor;
+import edu.uw.zookeeper.server.ToTxnRequestProcessor;
 import edu.uw.zookeeper.protocol.server.ZxidGenerator;
 import edu.uw.zookeeper.protocol.server.ZxidIncrementer;
 

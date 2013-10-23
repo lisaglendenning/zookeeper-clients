@@ -109,7 +109,7 @@ public class ConnectionClientExecutorsService
             if (this.connectionBuilder == connectionBuilder) {
                 return (C) this;
             } else {
-                return newInstance(connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
+                return newInstance(connectionBuilder.setRuntimeModule(getRuntimeModule()), clientConnectionFactory, clientExecutors, runtime);
             }
         }
 

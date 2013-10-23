@@ -10,6 +10,8 @@ import edu.uw.zookeeper.client.SimpleClientBuilder;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.net.intravm.IntraVmNetModule;
 import edu.uw.zookeeper.server.SimpleServerBuilder;
+import edu.uw.zookeeper.server.SimpleServerConnectionsBuilder;
+import edu.uw.zookeeper.server.SimpleServerExecutor;
 
 public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilder<List<Service>, SimpleServerAndClient> {
 
@@ -19,7 +21,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     
     protected final RuntimeModule runtime;
     protected final IntraVmNetModule netModule;
-    protected final SimpleServerBuilder serverBuilder;
+    protected final SimpleServerBuilder<?> serverBuilder;
     protected final SimpleClientBuilder clientBuilder;
 
     protected SimpleServerAndClient() {
@@ -28,7 +30,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     
     protected SimpleServerAndClient(
             IntraVmNetModule netModule,
-            SimpleServerBuilder server,
+            SimpleServerBuilder<?> server,
             SimpleClientBuilder client,
             RuntimeModule runtime) {
         this.netModule = netModule;
@@ -68,11 +70,11 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
         }
     }
 
-    public SimpleServerBuilder getServerBuilder() {
+    public SimpleServerBuilder<?> getServerBuilder() {
         return serverBuilder;
     }
     
-    public SimpleServerAndClient setServerBuilder(SimpleServerBuilder serverBuilder) {
+    public SimpleServerAndClient setServerBuilder(SimpleServerBuilder<?> serverBuilder) {
         if (this.serverBuilder == serverBuilder) {
             return this;
         } else {
@@ -116,7 +118,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     
     protected SimpleServerAndClient newInstance(
             IntraVmNetModule netModule,
-            SimpleServerBuilder serverBuilder,
+            SimpleServerBuilder<?> serverBuilder,
             SimpleClientBuilder clientBuilder,
             RuntimeModule runtime) {
         return new SimpleServerAndClient(netModule, serverBuilder, clientBuilder, runtime);
@@ -130,15 +132,16 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
         return IntraVmNetModule.defaults();
     }
     
-    protected SimpleServerBuilder getDefaultServerBuilder() {
+    protected SimpleServerBuilder<?> getDefaultServerBuilder() {
         ServerInetAddressView address = ServerInetAddressView.of((InetSocketAddress) netModule.factory().addresses().get());
-        return SimpleServerBuilder.defaults(
-                address, netModule).setRuntimeModule(runtime);
+        return new SimpleServerBuilder<SimpleServerExecutor.Builder>(
+                SimpleServerExecutor.builder(),
+                SimpleServerConnectionsBuilder.defaults(address, netModule)).setRuntimeModule(runtime);
     }
     
     protected SimpleClientBuilder getDefaultClientBuilder() {
         return SimpleClientBuilder.defaults(
-                serverBuilder.getConnectionBuilder().getAddress(), netModule).setRuntimeModule(runtime);
+                serverBuilder.getConnectionsBuilder().getConnectionBuilder().getAddress(), netModule).setRuntimeModule(runtime);
     }
 
     protected List<Service> getServices() {
