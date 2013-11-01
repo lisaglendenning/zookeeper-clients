@@ -19,6 +19,7 @@ import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolCodec;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
+import edu.uw.zookeeper.protocol.proto.OpCode;
 import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
 public class OperationTracingCodec extends ForwardingProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> implements Automatons.AutomatonListener<ProtocolState> {
@@ -74,12 +75,10 @@ public class OperationTracingCodec extends ForwardingProtocolCodec<Message.Clien
             Message.ServerSession message = output.get();
             if (message instanceof ConnectMessage.Response) {
                 ConnectMessage.Response response = (ConnectMessage.Response) message;
-                assert (sessionId == Session.UNINITIALIZED_ID);
                 sessionId = response.getSessionId();
             } else {
                 Message.ServerResponse<?> response = (Message.ServerResponse<?>) message;
                 if (! OpCodeXid.has(response.xid())) {
-                    assert (sessionId != Session.UNINITIALIZED_ID);
                     RequestSentEvent pending = times.peek();
                     if (pending != null) {
                         if (pending.request.xid() == response.xid()) {
@@ -88,6 +87,10 @@ public class OperationTracingCodec extends ForwardingProtocolCodec<Message.Clien
                             OperationEvent event = OperationEvent.create(latency, sessionId, pending.request, response); 
                             publisher.publish(event);
                         }
+                    }
+                    if (response.record().opcode() == OpCode.CLOSE_SESSION) {
+                        delegate.unsubscribe(this);
+                        assert(times.isEmpty());
                     }
                 }
             }
@@ -98,7 +101,6 @@ public class OperationTracingCodec extends ForwardingProtocolCodec<Message.Clien
     @Override
     public void handleAutomatonTransition(Automaton.Transition<ProtocolState> transition) {
         switch (transition.to()) {
-        case DISCONNECTED:
         case ERROR:
         {
             delegate.unsubscribe(this);

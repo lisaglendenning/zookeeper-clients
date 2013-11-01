@@ -12,9 +12,9 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Queues;
 
-import edu.uw.zookeeper.common.ExecutedActor;
+import edu.uw.zookeeper.common.Actors.ExecutedQueuedActor;
 
-public class TraceWriter extends ExecutedActor<TraceEvent> {
+public class TraceWriter extends ExecutedQueuedActor<TraceEvent> {
 
     public static TraceWriter forFile(
             File file,
@@ -73,22 +73,7 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     }
     
     @Override
-    protected Executor executor() {
-        return executor;
-    }
-
-    @Override
-    protected Logger logger() {
-        return logger;
-    }
-
-    @Override
-    protected Queue<TraceEvent> mailbox() {
-        return mailbox;
-    }
-    
-    @Override
-    protected synchronized void doRun() throws Exception {
+    protected synchronized void doRun() {
         TraceEvent next;
         while ((next = mailbox.poll()) != null) {
             if (! apply(next)) {
@@ -98,22 +83,21 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
     }
 
     @Override
-    protected boolean apply(TraceEvent input) throws Exception {
-        writer.writeValue(json, TraceEventHeader.create(input));
-        return (state() != State.TERMINATED);
+    protected boolean apply(TraceEvent input) {
+        try {
+            writer.writeValue(json, TraceEventHeader.create(input));
+            return true;
+        } catch (Exception e) {
+            logger.warn("{}", input, e);
+            mailbox.clear();
+            stop();
+            return false;
+        }
     }
 
     @Override
     protected synchronized void doStop() {
-        TraceEvent next;
-        while ((next = mailbox.poll()) != null) {
-            try {
-                apply(next);           
-            } catch (Exception e) {
-                logger.warn("{}", next, e);
-                mailbox.clear();
-            }
-        }
+        doRun();
         
         try {
             json.writeEndArray();
@@ -130,5 +114,20 @@ public class TraceWriter extends ExecutedActor<TraceEvent> {
             } catch (IOException e) {
             }
         }
+    }
+
+    @Override
+    protected Executor executor() {
+        return executor;
+    }
+
+    @Override
+    protected Logger logger() {
+        return logger;
+    }
+
+    @Override
+    protected Queue<TraceEvent> mailbox() {
+        return mailbox;
     }
 }
