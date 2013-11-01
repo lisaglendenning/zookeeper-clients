@@ -297,7 +297,7 @@ public abstract class Tracing {
         @SuppressWarnings("rawtypes")
         protected TraceEventPublisherService getDefaultTracePublisher() {
             return TraceEventPublisherService.newInstance(
-                    new SyncMessageBus<Object>(new SyncBusConfiguration()), 
+                    new SyncMessageBus<TraceEvent>(new SyncBusConfiguration()), 
                     getDefaultTraceWriter());
         }
     }

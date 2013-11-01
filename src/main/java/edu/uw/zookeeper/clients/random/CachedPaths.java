@@ -3,16 +3,19 @@ package edu.uw.zookeeper.clients.random;
 import java.util.List;
 import java.util.Random;
 
-import net.engio.mbassy.listener.Handler;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.client.ZNodeViewCache.ViewUpdate;
 import edu.uw.zookeeper.clients.common.Generator;
+import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.ProtocolState;
+import edu.uw.zookeeper.protocol.proto.IWatcherEvent;
 
-public class CachedPaths implements Generator<ZNodeLabel.Path> {
+public class CachedPaths implements Generator<ZNodeLabel.Path>, ZNodeViewCache.CacheSessionListener {
 
     public static CachedPaths create(ZNodeViewCache<?,?,?> cache, Random random) {
         CachedPaths instance = new CachedPaths(random, ImmutableList.<ZNodeLabel.Path>of());
@@ -55,8 +58,8 @@ public class CachedPaths implements Generator<ZNodeLabel.Path> {
             return elements.get(index);
         }
     }
-    
-    @Handler
+
+    @Override
     public void handleNodeUpdate(ZNodeViewCache.NodeUpdate event) {
         switch (event.type()) {
         case NODE_ADDED:
@@ -66,5 +69,17 @@ public class CachedPaths implements Generator<ZNodeLabel.Path> {
             remove(event.path().get());
             break;
         }
+    }
+
+    @Override
+    public void handleViewUpdate(ViewUpdate event) {
+    }
+
+    @Override
+    public void handleAutomatonTransition(Automaton.Transition<ProtocolState> transition) {
+    }
+
+    @Override
+    public void handleNotification(Operation.ProtocolResponse<IWatcherEvent> notification) {
     }
 }

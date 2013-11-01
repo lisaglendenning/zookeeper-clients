@@ -12,16 +12,16 @@ public class SubmitCallable<I extends Operation.Request, O extends Operation.Pro
 
     public static <I extends Operation.Request, O extends Operation.ProtocolResponse<?>> SubmitCallable<I,O> create(
             Generator<I> operations,
-            ClientExecutor<? super I, O> client) {
+            ClientExecutor<? super I, O, ?> client) {
         return new SubmitCallable<I,O>(operations, client);
     }
     
     protected final Generator<I> operations;
-    protected final ClientExecutor<? super I, O> client;
+    protected final ClientExecutor<? super I, O, ?> client;
     
     public SubmitCallable(
             Generator<I> operations,
-            ClientExecutor<? super I, O> client) {
+            ClientExecutor<? super I, O, ?> client) {
         this.operations = operations;
         this.client = client;
     }

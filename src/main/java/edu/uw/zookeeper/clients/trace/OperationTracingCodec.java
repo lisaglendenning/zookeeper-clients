@@ -6,16 +6,14 @@ import java.io.IOException;
 import java.util.Queue;
 
 import net.engio.mbassy.PubSubSupport;
-import net.engio.mbassy.listener.Handler;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
 
 import edu.uw.zookeeper.protocol.Session;
+import edu.uw.zookeeper.clients.ForwardingProtocolCodec;
 import edu.uw.zookeeper.common.Automaton;
-import edu.uw.zookeeper.common.Pair;
-import edu.uw.zookeeper.common.ParameterizedFactory;
-import edu.uw.zookeeper.net.Connection;
+import edu.uw.zookeeper.common.Automatons;
 import edu.uw.zookeeper.protocol.ConnectMessage;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolCodec;
@@ -23,44 +21,31 @@ import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.client.ClientProtocolCodec;
 import edu.uw.zookeeper.protocol.proto.OpCodeXid;
 
-public class OperationTracingCodec implements ProtocolCodec<Message.ClientSession, Message.ServerSession> {
+public class OperationTracingCodec extends ForwardingProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> implements Automatons.AutomatonListener<ProtocolState> {
 
-    public static ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, OperationTracingCodec>> factory(
-            final PubSubSupport<Object> publisher) {
-        return new ParameterizedFactory<PubSubSupport<Object>, Pair<Class<Message.ClientSession>, OperationTracingCodec>>() {
-            @Override
-            public Pair<Class<Message.ClientSession>, OperationTracingCodec> get(
-                    PubSubSupport<Object> value) {
-                return Pair.create(Message.ClientSession.class,
-                        OperationTracingCodec.newInstance(publisher,
-                                ClientProtocolCodec.newInstance(value)));
-            }
-        };
+    public static OperationTracingCodec defaults(
+            PubSubSupport<? super TraceEvent> publisher) {
+        return newInstance(publisher, ClientProtocolCodec.defaults());
     }
     
     public static OperationTracingCodec newInstance(
-            PubSubSupport<Object> publisher) {
-        return newInstance(publisher, ClientProtocolCodec.newInstance(publisher));
-    }
-    
-    public static OperationTracingCodec newInstance(
-            PubSubSupport<Object> publisher,
-            ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
+            PubSubSupport<? super TraceEvent> publisher,
+            ProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> delegate) {
         return new OperationTracingCodec(
                 publisher, 
                 Queues.<RequestSentEvent>newConcurrentLinkedQueue(), 
                 delegate);
     }
     
-    protected final PubSubSupport<Object> publisher;
+    protected final PubSubSupport<? super TraceEvent> publisher;
     protected final Queue<RequestSentEvent> times;
-    protected final ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate;
+    protected final ProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> delegate;
     protected volatile long sessionId;
     
     protected OperationTracingCodec(
-            PubSubSupport<Object> publisher, 
+            PubSubSupport<? super TraceEvent> publisher, 
             Queue<RequestSentEvent> times,
-            ProtocolCodec<Message.ClientSession, Message.ServerSession> delegate) {
+            ProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> delegate) {
         super();
         this.times = times;
         this.publisher = publisher;
@@ -82,9 +67,9 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
     }
 
     @Override
-    public Optional<Message.ServerSession> decode(ByteBuf input)
+    public Optional<? extends Message.ServerSession> decode(ByteBuf input)
             throws IOException {
-        Optional<Message.ServerSession> output = delegate.decode(input);
+        Optional<? extends Message.ServerSession> output = delegate.decode(input);
         if (output.isPresent()) {
             Message.ServerSession message = output.get();
             if (message instanceof ConnectMessage.Response) {
@@ -111,42 +96,26 @@ public class OperationTracingCodec implements ProtocolCodec<Message.ClientSessio
     }
 
     @Override
-    public ProtocolState state() {
-        return delegate.state();
-    }
-
-    @Override
-    public void publish(Object event) {
-        delegate.publish(event);
-    }
-
-    @Override
-    public void subscribe(Object handler) {
-        delegate.subscribe(handler);
-        publisher.subscribe(handler);
-    }
-
-    @Override
-    public boolean unsubscribe(Object handler) {
-        boolean unsubscribed = delegate.unsubscribe(handler);
-        try {
-            unsubscribed = publisher.unsubscribe(handler) || unsubscribed;
-        } catch (IllegalArgumentException e) {}
-        return unsubscribed;
-    }
-    
-    @Handler
-    public void handleTransition(Automaton.Transition<?> event) {
-        if (event.to() == Connection.State.CONNECTION_CLOSED) {
-            try {
-                delegate.unsubscribe(this);
-            } catch (IllegalArgumentException e) {}
-            
+    public void handleAutomatonTransition(Automaton.Transition<ProtocolState> transition) {
+        switch (transition.to()) {
+        case DISCONNECTED:
+        case ERROR:
+        {
+            delegate.unsubscribe(this);
             RequestSentEvent pending;
             while ((pending = times.poll()) != null) {
                 publisher.publish(OperationEvent.timeout(sessionId, pending.request));
             }
+            break;
         }
+        default:
+            break;
+        }
+    }
+
+    @Override
+    protected ProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> delegate() {
+        return delegate;
     }
     
     protected static class RequestSentEvent {

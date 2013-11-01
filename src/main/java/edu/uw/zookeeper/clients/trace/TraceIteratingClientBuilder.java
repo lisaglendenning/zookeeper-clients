@@ -50,7 +50,7 @@ public class TraceIteratingClientBuilder extends TraceWritingClientBuilder<Trace
     
     @Override
     protected Runnable getDefaultRunnable() {
-        ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> client = getDefaultClientExecutor();
+        ClientExecutor<? super Operation.Request, Message.ServerResponse<?>, ?> client = getDefaultClientExecutor();
         Iterator<Records.Request> requests = getDefaultRequests();
         final Iterator<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> operations = SubmitIterator.create(requests, client);
         return new Runnable() {

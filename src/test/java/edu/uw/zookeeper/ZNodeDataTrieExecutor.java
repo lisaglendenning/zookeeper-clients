@@ -1,8 +1,8 @@
 package edu.uw.zookeeper;
 
-import net.engio.mbassy.PubSubSupport;
-import net.engio.mbassy.bus.SyncBusConfiguration;
-import net.engio.mbassy.bus.SyncMessageBus;
+import static com.google.common.base.Preconditions.checkNotNull;
+import net.engio.mbassy.common.IConcurrentSet;
+import net.engio.mbassy.common.StrongConcurrentSet;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -16,6 +16,7 @@ import edu.uw.zookeeper.data.ZNodeDataTrie;
 import edu.uw.zookeeper.data.ZNodeDataTrie.Operators;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolResponseMessage;
+import edu.uw.zookeeper.protocol.SessionListener;
 import edu.uw.zookeeper.protocol.SessionOperation;
 import edu.uw.zookeeper.protocol.proto.Records;
 import edu.uw.zookeeper.protocol.server.AssignZxidProcessor;
@@ -25,25 +26,25 @@ import edu.uw.zookeeper.server.ToTxnRequestProcessor;
 import edu.uw.zookeeper.protocol.server.ZxidGenerator;
 import edu.uw.zookeeper.protocol.server.ZxidIncrementer;
 
-public class ZNodeDataTrieExecutor implements PubSubSupport<Object>, ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>>,
+// FIXME: notifications
+public class ZNodeDataTrieExecutor implements ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>, SessionListener>,
         Processors.UncheckedProcessor<SessionOperation.Request<?>, Message.ServerResponse<?>> {
 
-    @SuppressWarnings("rawtypes")
-    public static ZNodeDataTrieExecutor create() {
-        return create(
+    public static ZNodeDataTrieExecutor defaults() {
+        return newInstance(
                 ZNodeDataTrie.newInstance(),
                 ZxidIncrementer.fromZero(),
-                new SyncMessageBus<Object>(new SyncBusConfiguration()));
+                new StrongConcurrentSet<SessionListener>());
     }
 
-    public static ZNodeDataTrieExecutor create(
+    public static ZNodeDataTrieExecutor newInstance(
             ZNodeDataTrie trie,
             ZxidGenerator zxids,
-            PubSubSupport<Object> publisher) {
-        return new ZNodeDataTrieExecutor(trie, zxids, publisher);
+            IConcurrentSet<SessionListener> listeners) {
+        return new ZNodeDataTrieExecutor(trie, zxids, listeners);
     }
     
-    protected final PubSubSupport<Object> publisher;
+    protected final IConcurrentSet<SessionListener> listeners;
     protected final ZNodeDataTrie trie;
     protected final RequestErrorProcessor<TxnOperation.Request<?>> operator;
     protected final ToTxnRequestProcessor txnProcessor;
@@ -51,9 +52,9 @@ public class ZNodeDataTrieExecutor implements PubSubSupport<Object>, ClientExecu
     public ZNodeDataTrieExecutor(
             ZNodeDataTrie trie,
             ZxidGenerator zxids,
-            PubSubSupport<Object> publisher) {
-        this.trie = trie;
-        this.publisher = publisher;
+            IConcurrentSet<SessionListener> listeners) {
+        this.trie = checkNotNull(trie);
+        this.listeners = checkNotNull(listeners);
         this.txnProcessor = ToTxnRequestProcessor.create(
                 AssignZxidProcessor.newInstance(zxids));
         this.operator = RequestErrorProcessor.create(
@@ -80,22 +81,16 @@ public class ZNodeDataTrieExecutor implements PubSubSupport<Object>, ClientExecu
     public synchronized Message.ServerResponse<?> apply(SessionOperation.Request<?> input) {
         TxnOperation.Request<?> request = txnProcessor.apply(input);
         Message.ServerResponse<Records.Response> response = ProtocolResponseMessage.of(request.xid(), request.zxid(), operator.apply(request));
-        publish(response);
         return response;
     }
 
     @Override
-    public void subscribe(Object handler) {
-        publisher.subscribe(handler);
+    public void subscribe(SessionListener listener) {
+        listeners.add(listener);
     }
 
     @Override
-    public boolean unsubscribe(Object handler) {
-        return publisher.unsubscribe(handler);
-    }
-    
-    @Override
-    public void publish(Object event) {
-        publisher.publish(event);
+    public boolean unsubscribe(SessionListener listener) {
+        return listeners.remove(listener);
     }
 }

@@ -8,13 +8,14 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Service;
 
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
-import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.common.RunnableService;
+import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 
 public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuilder<C>> extends Tracing.TraceWritingBuilder<List<Service>, C> {
 
@@ -81,13 +82,20 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     
     protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
         return ConnectionClientExecutorService.builder()
-                .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
-                        .setCodecFactory(ProtocolTracingCodec.factory(getTracePublisher().getPublisher())))
+                .setConnectionBuilder(
+                        ClientConnectionFactoryBuilder.defaults()
+                        .setCodecFactory(
+                                new Factory<ProtocolTracingCodec>() {
+                                    @Override
+                                    public ProtocolTracingCodec get() {
+                                        return ProtocolTracingCodec.defaults(getTracePublisher().getPublisher());
+                                    }
+                                }))
                 .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }
     
-    protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
+    protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>, ?> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().getConfiguration(), 
                 getClientBuilder().getConnectionClientExecutor());

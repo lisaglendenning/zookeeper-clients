@@ -10,22 +10,22 @@ import edu.uw.zookeeper.common.Actor;
 public class TraceEventPublisherService extends AbstractIdleService {
 
     public static TraceEventPublisherService newInstance(
-            PubSubSupport<Object> publisher,
+            PubSubSupport<? super TraceEvent> publisher,
             Actor<? super TraceEvent> writer) {
         return new TraceEventPublisherService(publisher, writer);
     }
     
-    protected final PubSubSupport<Object> publisher;
+    protected final PubSubSupport<? super TraceEvent> publisher;
     protected final Actor<? super TraceEvent> writer; 
     
     public TraceEventPublisherService(
-            PubSubSupport<Object> publisher,
+            PubSubSupport<? super TraceEvent> publisher,
             Actor<? super TraceEvent> writer) {
         this.publisher = publisher;
         this.writer = writer;
     }
     
-    public PubSubSupport<Object> getPublisher() {
+    public PubSubSupport<? super TraceEvent> getPublisher() {
         return publisher;
     }
     

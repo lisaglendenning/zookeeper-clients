@@ -116,7 +116,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     }
 
     @Override
-    protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>> getDefaultClientExecutor() {
+    protected ClientExecutor<? super Operation.Request, Message.ServerResponse<?>, ?> getDefaultClientExecutor() {
         return LimitOutstandingClient.create(
                 getRuntimeModule().getConfiguration(), 
                 getCache());

@@ -25,6 +25,9 @@ import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.proto.Records;
 
+/** 
+ * FIXME: broken??
+ */
 @RunWith(JUnit4.class)
 public class RandomSingleClientTest {
     

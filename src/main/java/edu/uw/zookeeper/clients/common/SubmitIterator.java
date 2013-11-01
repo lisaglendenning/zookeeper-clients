@@ -13,16 +13,16 @@ public class SubmitIterator<I extends Operation.Request, O extends Operation.Pro
 
     public static <I extends Operation.Request, O extends Operation.ProtocolResponse<?>> SubmitIterator<I,O> create(
             Iterator<I> requests,
-            ClientExecutor<? super I, O> client) {
+            ClientExecutor<? super I, O, ?> client) {
         return new SubmitIterator<I,O>(requests, client);
     }
     
     protected final Iterator<I> requests;
-    protected final ClientExecutor<? super I, O> client;
+    protected final ClientExecutor<? super I, O, ?> client;
     
     public SubmitIterator(
             Iterator<I> requests,
-            ClientExecutor<? super I, O> client) {
+            ClientExecutor<? super I, O, ?> client) {
         this.requests = requests;
         this.client = client;
     }

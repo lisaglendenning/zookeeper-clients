@@ -22,7 +22,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.Service;
 import com.typesafe.config.ConfigValueType;
 
-import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.ConnectionClientExecutorsService;
 import edu.uw.zookeeper.clients.common.Generator;
@@ -34,6 +33,7 @@ import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
+import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.LoggingPromise;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.Promise;
@@ -42,6 +42,7 @@ import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.Operation;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.proto.Records;
 
@@ -165,7 +166,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     
     protected ClientConnectionFactoryBuilder getDefaultClientConnectionFactoryBuilder() {
         return ClientConnectionFactoryBuilder.defaults()
-                .setCodecFactory(OperationTracingCodec.factory(getTracePublisher().getPublisher()))
+                .setCodecFactory(
+                        new Factory<OperationTracingCodec>() {
+                            @Override
+                            public OperationTracingCodec get() {
+                                return OperationTracingCodec.defaults(getTracePublisher().getPublisher());
+                            }
+                        })
                 .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }
@@ -193,13 +200,13 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
             @Override
             public void run() {
                 try {
-                    List<ConnectionClientExecutor<Operation.Request, ?, ?>> executors = Lists.newArrayListWithCapacity(nclients);
+                    List<ConnectionClientExecutor<Operation.Request,?,?,?>> executors = Lists.newArrayListWithCapacity(nclients);
                     for (int i=0; i<nclients; ++i) {
                         executors.add(connectionBuilder.getConnectionClientExecutors().get().get());
                     }
                     
                     List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
-                    for (ConnectionClientExecutor<Operation.Request, ?, ?> e: executors) {
+                    for (ConnectionClientExecutor<Operation.Request,?,?,?> e: executors) {
                         IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task = IterationCallable.create(
                                 iterations, logInterval,
                                 SubmitCallable.create(

@@ -3,18 +3,16 @@ package edu.uw.zookeeper.clients;
 import java.util.concurrent.ScheduledExecutorService;
 
 import edu.uw.zookeeper.ServerInetAddressView;
-import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.ServerViewFactory;
 import edu.uw.zookeeper.client.SimpleClientBuilder;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.net.ClientConnectionFactory;
-import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.net.NetClientModule;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
-import edu.uw.zookeeper.protocol.ProtocolCodec;
-import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
+import edu.uw.zookeeper.protocol.ProtocolConnection;
 import edu.uw.zookeeper.protocol.Session;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.client.OperationClientExecutor;
 
 public class SimpleClientsBuilder extends ConnectionClientExecutorsService.OperationBuilder {
@@ -40,7 +38,7 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
     protected SimpleClientsBuilder(
             ServerInetAddressView serverAddress,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+            ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
             ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors,
             RuntimeModule runtime) {
         super(connectionBuilder,clientConnectionFactory, clientExecutors, runtime);
@@ -71,7 +69,7 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
 
     @Override
     public SimpleClientsBuilder setClientConnectionFactory(
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory) {
+            ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory) {
         return (SimpleClientsBuilder) super.setClientConnectionFactory(clientConnectionFactory);
     }
 
@@ -89,7 +87,7 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
     @Override
     protected SimpleClientsBuilder newInstance(
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+            ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
             ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors,
             RuntimeModule runtime) {
         return newInstance(serverAddress, connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
@@ -98,7 +96,7 @@ public class SimpleClientsBuilder extends ConnectionClientExecutorsService.Opera
     protected SimpleClientsBuilder newInstance(
             ServerInetAddressView serverAddress,
             ClientConnectionFactoryBuilder connectionBuilder,
-            ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+            ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
             ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors,
             RuntimeModule runtime) {
         return new SimpleClientsBuilder(serverAddress, connectionBuilder, clientConnectionFactory, clientExecutors, runtime);

@@ -10,9 +10,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import net.engio.mbassy.listener.Handler;
-import net.engio.mbassy.listener.References;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +26,6 @@ import com.google.common.util.concurrent.Service;
 import edu.uw.zookeeper.EnsembleView;
 import edu.uw.zookeeper.ServerInetAddressView;
 import edu.uw.zookeeper.ZooKeeperApplication;
-import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.client.ConfigurableEnsembleView;
 import edu.uw.zookeeper.client.EnsembleViewFactory;
 import edu.uw.zookeeper.client.ServerViewFactory;
@@ -43,20 +39,20 @@ import edu.uw.zookeeper.net.ClientConnectionFactory;
 import edu.uw.zookeeper.net.Connection;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
-import edu.uw.zookeeper.protocol.ProtocolCodec;
-import edu.uw.zookeeper.protocol.ProtocolCodecConnection;
+import edu.uw.zookeeper.protocol.ProtocolConnection;
 import edu.uw.zookeeper.protocol.ProtocolRequestMessage;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.Session;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
 import edu.uw.zookeeper.protocol.client.OperationClientExecutor;
 
 public class ConnectionClientExecutorsService
-        <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?>> 
+        <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?,?>> 
         extends AbstractIdleService 
         implements DefaultsFactory<T, ListenableFuture<C>>, Function<C, C>, Iterable<C> {
 
-    public static <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
+    public static <I extends Operation.Request, T, C extends ConnectionClientExecutor<I,?,?,?>> ConnectionClientExecutorsService<I,T,C> newInstance(
             DefaultsFactory<T, ? extends ListenableFuture<? extends C>> factory) {
         return new ConnectionClientExecutorsService<I,T,C>(factory);
     }
@@ -69,12 +65,12 @@ public class ConnectionClientExecutorsService
 
         protected final RuntimeModule runtime;
         protected final ClientConnectionFactoryBuilder connectionBuilder;
-        protected final ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory;
+        protected final ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory;
         protected final T clientExecutors;
 
         protected AbstractBuilder(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
                 T clientExecutors,
                 RuntimeModule runtime) {
             this.connectionBuilder = connectionBuilder;
@@ -113,13 +109,13 @@ public class ConnectionClientExecutorsService
             }
         }
 
-        public ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> getClientConnectionFactory() {
+        public ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> getClientConnectionFactory() {
             return clientConnectionFactory;
         }
 
         @SuppressWarnings("unchecked")
         public C setClientConnectionFactory(
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory) {
+                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory) {
             if (this.clientConnectionFactory == clientConnectionFactory) {
                 return (C) this;
             } else {
@@ -175,7 +171,7 @@ public class ConnectionClientExecutorsService
         
         protected abstract C newInstance(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
                 T clientExecutors,
                 RuntimeModule runtime);
 
@@ -184,7 +180,7 @@ public class ConnectionClientExecutorsService
                     .setRuntimeModule(runtime).setDefaults();
         }
 
-        protected ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> getDefaultClientConnectionFactory() {
+        protected ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> getDefaultClientConnectionFactory() {
             return connectionBuilder.build();
         }
 
@@ -195,7 +191,7 @@ public class ConnectionClientExecutorsService
 
         protected OperationBuilder(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
                 ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors,
                 RuntimeModule runtime) {
             super(connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
@@ -204,7 +200,7 @@ public class ConnectionClientExecutorsService
         @Override
         protected OperationBuilder newInstance(
                 ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolCodecConnection<Message.ClientSession, ? extends ProtocolCodec<Message.ClientSession, Message.ServerSession>, Connection<Message.ClientSession>>> clientConnectionFactory,
+                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
                 ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> clientExecutors,
                 RuntimeModule runtime) {
             return new OperationBuilder(connectionBuilder, clientConnectionFactory, clientExecutors, runtime);
@@ -318,18 +314,20 @@ public class ConnectionClientExecutorsService
         }
     }
     
-    @net.engio.mbassy.listener.Listener(references = References.Strong)
-    protected class ClientHandler implements Reference<C> {
+    protected class ClientHandler implements Reference<C>, Connection.Listener<Object> {
         
         protected final C instance;
         
         public ClientHandler(C instance) {
             this.instance = instance;
             executors.add(instance);
-            instance.subscribe(this);
+            instance.connection().subscribe(this);
             if (! isRunning()) {
                 instance.connection().close();
                 throw new IllegalStateException(String.valueOf(state()));
+            }
+            if (instance.connection().state() == Connection.State.CONNECTION_CLOSED) {
+                handleConnectionState(Automaton.Transition.create(instance.connection().state(), instance.connection().state()));
             }
         }
         
@@ -338,14 +336,17 @@ public class ConnectionClientExecutorsService
             return instance;
         }
 
-        @Handler
-        public void handleTransition(Automaton.Transition<?> event) {
-            if (event.to() == Connection.State.CONNECTION_CLOSED) {
-                try {
-                    instance.unsubscribe(this);
-                } catch (IllegalArgumentException e) {}
+        @Override
+        public void handleConnectionState(
+                Automaton.Transition<Connection.State> state) {
+            if (state.to() == Connection.State.CONNECTION_CLOSED) {
+                instance.connection().unsubscribe(this);
                 executors.remove(instance);
             }
+        }
+
+        @Override
+        public void handleConnectionRead(Object message) {
         }
     }
 }

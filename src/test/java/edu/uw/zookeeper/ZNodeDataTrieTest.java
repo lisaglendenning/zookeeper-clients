@@ -4,9 +4,6 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
-import net.engio.mbassy.bus.SyncBusConfiguration;
-import net.engio.mbassy.bus.SyncMessageBus;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -24,13 +21,10 @@ import edu.uw.zookeeper.clients.common.IterationCallable;
 import edu.uw.zookeeper.clients.common.SubmitCallable;
 import edu.uw.zookeeper.clients.random.BasicRequestGenerator;
 import edu.uw.zookeeper.common.ListAccumulator;
-import edu.uw.zookeeper.common.LoggingPublisher;
 import edu.uw.zookeeper.common.Pair;
-import edu.uw.zookeeper.data.ZNodeDataTrie;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.proto.Records;
-import edu.uw.zookeeper.protocol.server.ZxidIncrementer;
 
 @RunWith(JUnit4.class)
 public class ZNodeDataTrieTest {
@@ -39,12 +33,7 @@ public class ZNodeDataTrieTest {
     
     @Test(timeout=10000)
     public void testRandom() throws Exception {
-        @SuppressWarnings("rawtypes")
-        ZNodeDataTrieExecutor executor = ZNodeDataTrieExecutor.create(
-                ZNodeDataTrie.newInstance(),
-                ZxidIncrementer.fromZero(),
-                LoggingPublisher.create(logger,
-                        new SyncMessageBus<Object>(new SyncBusConfiguration())));
+        ZNodeDataTrieExecutor executor = ZNodeDataTrieExecutor.defaults();
         ZNodeViewCache<?, Records.Request, Message.ServerResponse<?>> cache = 
                 ZNodeViewCache.newInstance(SessionClientExecutor.create(1, executor));
         int iterations = 100;

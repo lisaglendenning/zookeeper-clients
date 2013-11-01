@@ -12,15 +12,16 @@ import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
-import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
 import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
+import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<MeasuringClientBuilder> {
@@ -131,8 +132,15 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     @Override
     protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
         return ConnectionClientExecutorService.builder()
-                .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
-                        .setCodecFactory(OperationTracingCodec.factory(getTracePublisher().getPublisher())))
+                .setConnectionBuilder(
+                        ClientConnectionFactoryBuilder.defaults()
+                        .setCodecFactory(
+                                new Factory<OperationTracingCodec>() {
+                                    @Override
+                                    public OperationTracingCodec get() {
+                                        return OperationTracingCodec.defaults(getTracePublisher().getPublisher());
+                                    }
+                                }))
                 .setRuntimeModule(getRuntimeModule())
                 .setDefaults();
     }
