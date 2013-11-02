@@ -37,31 +37,26 @@ public class TraceWriter extends ExecutedQueuedActor<TraceEvent> {
                 json,
                 writer,
                 header,
+                executor,
                 Queues.<TraceEvent>newConcurrentLinkedQueue(),
-                LogManager.getLogger(TraceWriter.class),
-                executor);
+                LogManager.getLogger(TraceWriter.class));
     }
     
     protected final ObjectWriter writer;
     protected final JsonGenerator json;
-    protected final Logger logger;
-    protected final Queue<TraceEvent> mailbox;
-    protected final Executor executor;
     protected final TraceHeader header;
     
     public TraceWriter(
             JsonGenerator json,
             ObjectWriter writer,
-            TraceHeader header,
+            TraceHeader header, 
+            Executor executor,
             Queue<TraceEvent> mailbox,
-            Logger logger, 
-            Executor executor) throws IOException {
+            Logger logger) throws IOException {
+        super(executor, mailbox, logger);
         this.writer = writer;
         this.json = json;
         this.header = header;
-        this.logger = logger;
-        this.mailbox = mailbox;
-        this.executor = executor;
 
         json.writeStartArray();
         writer.writeValue(json, header);
@@ -114,20 +109,5 @@ public class TraceWriter extends ExecutedQueuedActor<TraceEvent> {
             } catch (IOException e) {
             }
         }
-    }
-
-    @Override
-    protected Executor executor() {
-        return executor;
-    }
-
-    @Override
-    protected Logger logger() {
-        return logger;
-    }
-
-    @Override
-    protected Queue<TraceEvent> mailbox() {
-        return mailbox;
     }
 }
