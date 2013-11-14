@@ -2,7 +2,7 @@ package edu.uw.zookeeper.clients.random;
 
 import java.util.Random;
 
-import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.ZNodeLabel;
@@ -10,10 +10,10 @@ import edu.uw.zookeeper.protocol.proto.Records;
 
 public class PathedRequestGenerator implements Generator<Records.Request> {
 
-    public static PathedRequestGenerator fromCache(
-            ZNodeViewCache<?,?,?> cache) {
+    public static <E extends ZNodeCacheTrie.CachedNode<E>> PathedRequestGenerator fromCache(
+            ZNodeCacheTrie<? extends E,?,?> cache) {
         Random random = new Random();
-        CachedPaths paths = CachedPaths.create(cache, random);
+        CachedPaths<E> paths = CachedPaths.create(cache, random);
         return exists(paths);
     }
 

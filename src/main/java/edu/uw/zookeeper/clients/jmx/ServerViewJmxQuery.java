@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
@@ -22,9 +20,10 @@ import edu.uw.zookeeper.EnsembleRole;
 import edu.uw.zookeeper.ServerInetAddressView;
 import edu.uw.zookeeper.ServerRoleView;
 import edu.uw.zookeeper.ServerView;
+import edu.uw.zookeeper.clients.jmx.Jmx.JmxBeanNode;
 import edu.uw.zookeeper.common.DefaultsFactory;
+import edu.uw.zookeeper.data.DefaultsZNodeLabelTrie;
 import edu.uw.zookeeper.data.ZNodeLabel;
-import edu.uw.zookeeper.data.ZNodeLabelTrie;
 
 public abstract class ServerViewJmxQuery {
 
@@ -66,7 +65,7 @@ public abstract class ServerViewJmxQuery {
     
     public static ServerInetAddressView addressViewOf(MBeanServerConnection mbeans) throws IOException {
         for (Jmx.ServerSchema schema: Jmx.ServerSchema.values()) {
-            ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> objectNames = schema.instantiate(mbeans);
+            DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
             if (objectNames == null || objectNames.isEmpty()) {
                 continue;
             }
@@ -74,7 +73,7 @@ public abstract class ServerViewJmxQuery {
             switch (schema) {
             case STANDALONE_SERVER: 
             {
-                ObjectName name = Iterables.getOnlyElement(objectNames.get(schema.pathOf(Jmx.Key.STANDALONE_SERVER)).get());
+                ObjectName name = Iterables.getOnlyElement(objectNames.get(schema.pathOf(Jmx.Key.STANDALONE_SERVER)).getNames());
                 String address;
                 try {
                     address = (String) mbeans.getAttribute(name, CLIENT_PORT_ATTRIBUTE);
@@ -88,9 +87,9 @@ public abstract class ServerViewJmxQuery {
             {
                 Jmx.Key[] roles = { Jmx.Key.FOLLOWER, Jmx.Key.LEADER };
                 for (Jmx.Key role: roles) {
-                    ZNodeLabelTrie.ValueNode<Set<ObjectName>> node = objectNames.get(schema.pathOf(role));
+                    JmxBeanNode node = objectNames.get(schema.pathOf(role));
                     if (node != null) {
-                        ObjectName name = Iterables.getOnlyElement(node.get());
+                        ObjectName name = Iterables.getOnlyElement(node.getNames());
                         String address;
                         try {
                             address = (String) mbeans.getAttribute(name, CLIENT_PORT_ATTRIBUTE);
@@ -111,7 +110,7 @@ public abstract class ServerViewJmxQuery {
     
     public static EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleViewOf(MBeanServerConnection mbeans) throws IOException {
         Jmx.ServerSchema schema = Jmx.ServerSchema.REPLICATED_SERVER;
-        ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> objectNames = schema.instantiate(mbeans);
+        DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
         if (objectNames == null || objectNames.isEmpty()) {
             return null;
         }
@@ -125,7 +124,7 @@ public abstract class ServerViewJmxQuery {
                         EnsembleRole.FOLLOWING,
                         schema.pathOf(Jmx.Key.FOLLOWER));
         List<ServerRoleView<InetSocketAddress, ServerInetAddressView>> servers = Lists.newLinkedList();
-        for (ObjectName name: objectNames.get(schema.pathOf(Jmx.Key.REPLICA)).get()) {
+        for (ObjectName name: objectNames.get(schema.pathOf(Jmx.Key.REPLICA)).getNames()) {
             String address;
             try {
                 address = (String) mbeans.getAttribute(name, QUORUM_ADDRESS_ATTRIBUTE);
@@ -135,9 +134,9 @@ public abstract class ServerViewJmxQuery {
             ServerInetAddressView addressView = ServerInetAddressView.fromString(address);
             EnsembleRole role = EnsembleRole.UNKNOWN;
             for (Map.Entry<EnsembleRole, ZNodeLabel.Path> entry: roles.entrySet()) {
-                ZNodeLabelTrie.ValueNode<Set<ObjectName>> node = objectNames.get(entry.getValue());
+                JmxBeanNode node = objectNames.get(entry.getValue());
                 if (node != null) {
-                    ObjectName nodeName = Iterables.getOnlyElement(node.get());
+                    ObjectName nodeName = Iterables.getOnlyElement(node.getNames());
                     if (nodeName.getCanonicalKeyPropertyListString().startsWith(name.getCanonicalKeyPropertyListString())) {
                         role = entry.getKey();
                         break;

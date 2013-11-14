@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;
@@ -35,8 +35,8 @@ public class RandomSingleClientTest {
         }
         monitor.startAsync().awaitRunning();
         
-        ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache = 
-                ZNodeViewCache.newInstance( 
+        ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> cache = 
+                ZNodeCacheTrie.newInstance( 
                         client.getClientBuilder().getConnectionClientExecutor());
         int iterations = 100;
         Generator<Records.Request> requests = BasicRequestGenerator.create(cache);

@@ -12,7 +12,7 @@ import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.client.TreeFetcher;
-import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.random.BasicRequestGenerator;
 import edu.uw.zookeeper.common.RuntimeModule;
@@ -30,9 +30,9 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
 
     protected static class FetchCacheService extends AbstractIdleService {
 
-        private final ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache;
+        private final ZNodeCacheTrie<?, Operation.Request, Message.ServerResponse<?>> cache;
         
-        public FetchCacheService(ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache) {
+        public FetchCacheService(ZNodeCacheTrie<?, Operation.Request, Message.ServerResponse<?>> cache) {
             this.cache = checkNotNull(cache);
         }
         
@@ -46,14 +46,14 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         }
     }
     
-    protected final ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache;
+    protected final ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> cache;
 
     protected TraceGeneratingCacheClientBuilder() {
         this(null, null, null, null, null, null);
     }
     
     protected TraceGeneratingCacheClientBuilder(
-            ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> cache,
+            ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> cache,
                     ConnectionClientExecutorService.Builder clientBuilder, 
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,
@@ -63,12 +63,12 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         this.cache = cache;
     }
     
-    public ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getCache() {
+    public ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> getCache() {
         return cache;
     }
 
     public TraceGeneratingCacheClientBuilder setCache(
-            ZNodeViewCache<?, Request, ServerResponse<?>> cache) {
+            ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Request, ServerResponse<?>> cache) {
         return newInstance(cache, clientBuilder, writerBuilder, tracePublisher, mapper, runtime);
     }
 
@@ -94,7 +94,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
     }
 
     protected TraceGeneratingCacheClientBuilder newInstance(
-            ZNodeViewCache<?, Request, ServerResponse<?>> cache,
+            ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Request, ServerResponse<?>> cache,
             ConnectionClientExecutorService.Builder clientBuilder,
             TraceWriterBuilder writerBuilder,
             TraceEventPublisherService tracePublisher,  
@@ -110,8 +110,8 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         return services;
     }
 
-    protected ZNodeViewCache<?, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
-        return ZNodeViewCache.newInstance(
+    protected ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> getDefaultCache() {
+        return ZNodeCacheTrie.newInstance(
                 getClientBuilder().getConnectionClientExecutor());
     }
 

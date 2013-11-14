@@ -6,8 +6,7 @@ import java.util.Random;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import edu.uw.zookeeper.client.ZNodeViewCache;
-import edu.uw.zookeeper.client.ZNodeViewCache.ViewUpdate;
+import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.data.ZNodeLabel;
@@ -15,13 +14,13 @@ import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.proto.IWatcherEvent;
 
-public class CachedPaths implements Generator<ZNodeLabel.Path>, ZNodeViewCache.CacheSessionListener {
+public class CachedPaths<E extends ZNodeCacheTrie.CachedNode<E>> implements Generator<ZNodeLabel.Path>, ZNodeCacheTrie.CacheSessionListener<E> {
 
-    public static CachedPaths create(ZNodeViewCache<?,?,?> cache, Random random) {
-        CachedPaths instance = new CachedPaths(random, ImmutableList.<ZNodeLabel.Path>of());
+    public static <E extends ZNodeCacheTrie.CachedNode<E>> CachedPaths<E> create(ZNodeCacheTrie<? extends E,?,?> cache, Random random) {
+        CachedPaths<E> instance = new CachedPaths<E>(random, ImmutableList.<ZNodeLabel.Path>of());
         cache.subscribe(instance);
         synchronized (instance) {
-            for (ZNodeViewCache.NodeCache<?> e: cache.trie()) {
+            for (ZNodeCacheTrie.CachedNode<?> e: cache) {
                 instance.add(e.path());
             }
         }
@@ -60,19 +59,12 @@ public class CachedPaths implements Generator<ZNodeLabel.Path>, ZNodeViewCache.C
     }
 
     @Override
-    public void handleNodeUpdate(ZNodeViewCache.NodeUpdate event) {
-        switch (event.type()) {
-        case NODE_ADDED:
-            add(event.path().get());
-            break;
-        case NODE_REMOVED:
-            remove(event.path().get());
-            break;
+    public void handleCacheUpdate(ZNodeCacheTrie.CacheEvent<? extends E> event) {
+        if (event instanceof ZNodeCacheTrie.NodeAddedCacheEvent) {
+            add(event.getNode().path());
+        } else if (event instanceof ZNodeCacheTrie.NodeRemovedCacheEvent) {
+            remove(event.getNode().path());
         }
-    }
-
-    @Override
-    public void handleViewUpdate(ViewUpdate event) {
     }
 
     @Override

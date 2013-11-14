@@ -16,12 +16,13 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
+import com.google.common.collect.Maps;
 import edu.uw.zookeeper.common.DefaultsFactory;
 import edu.uw.zookeeper.common.Factory;
+import edu.uw.zookeeper.data.DefaultsZNodeLabelTrie;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.data.ZNodeLabelTrie;
 
@@ -38,10 +39,10 @@ public abstract class Jmx {
         try {
             MBeanServerConnection mbeans = connector.getMBeanServerConnection();
             for (ServerSchema schema: ServerSchema.values()) {
-                ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> objectNames = schema.instantiate(mbeans);
+                DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
                 if (! objectNames.isEmpty()) {
-                    for (ZNodeLabelTrie.ValueNode<Set<ObjectName>> e: objectNames) {
-                        System.out.printf("%s = %s%n", e.path(), e.get());
+                    for (JmxBeanNode e: objectNames) {
+                        System.out.printf("%s = %s%n", e.path(), e.getNames());
                     }
                 }
             }
@@ -160,56 +161,116 @@ public abstract class Jmx {
             this.value = value;
         }
         
-        public String value() {
+        public ZNodeLabel.Component label() {
+            return ZNodeLabel.Component.of(value);
+        }
+
+        @Override
+        public String toString() {
             return value;
         }
     }
     
+    public static class JmxSchemaNode extends DefaultsZNodeLabelTrie.AbstractDefaultsNode<JmxSchemaNode> {
 
-    public static enum ObjectNameNodeFactory implements Function<ZNodeLabel.Path, Set<ObjectName>> {
-        INSTANCE;
-
-        public static ZNodeLabelTrie.ValueNode<Set<ObjectName>> root() {
-            return ZNodeLabelTrie.ValueNode.root(ObjectNameNodeFactory.getInstance());
-        }
-
-        public static ObjectNameNodeFactory getInstance() {
-            return INSTANCE;
+        public static JmxSchemaNode root() {
+            return new JmxSchemaNode(ZNodeLabelTrie.<JmxSchemaNode>strongPointer(ZNodeLabel.none(), null));
         }
         
-        private ObjectNameNodeFactory() {}
-        
+        protected JmxSchemaNode(
+                ZNodeLabelTrie.Pointer<? extends JmxSchemaNode> parent) {
+            super(ZNodeLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel.Component, JmxSchemaNode>newHashMap());
+        }
+
         @Override
-        public Set<ObjectName> apply(ZNodeLabel.Path value) {
-            return Sets.newHashSet();
+        protected JmxSchemaNode newChild(ZNodeLabel.Component label) {
+            return new JmxSchemaNode(ZNodeLabelTrie.weakPointer(label, this));
         }
     }
     
+    public static class JmxBeanNode extends DefaultsZNodeLabelTrie.AbstractDefaultsNode<JmxBeanNode> {
+
+        public static JmxBeanNode root() {
+            return new JmxBeanNode(
+                    ImmutableSet.<ObjectName>of(),
+                    ZNodeLabelTrie.<JmxBeanNode>strongPointer(ZNodeLabel.none(), null));
+        }
+
+        public static JmxBeanNode child(
+                ZNodeLabel.Component label, JmxBeanNode parent) {
+            return child(
+                    ImmutableSet.<ObjectName>of(),
+                    label,
+                    parent);
+        }
+
+        public static JmxBeanNode child(
+                Set<ObjectName> names,
+                ZNodeLabel.Component label,
+                JmxBeanNode parent) {
+            return new JmxBeanNode(
+                    ImmutableSet.copyOf(names),
+                    ZNodeLabelTrie.<JmxBeanNode>weakPointer(label, parent));
+        }
+        
+        protected volatile ImmutableSet<ObjectName> names;
+        
+        protected JmxBeanNode(
+                ImmutableSet<ObjectName> names,
+                ZNodeLabelTrie.Pointer<? extends JmxBeanNode> parent) {
+            super(ZNodeLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel.Component, JmxBeanNode>newHashMap());
+            this.names = names;
+        }
+        
+        public ImmutableSet<ObjectName> getNames() {
+            return names;
+        }
+
+        public void setNames(Set<ObjectName> names) {
+            this.names = ImmutableSet.copyOf(names);
+        }
+        
+        public synchronized JmxBeanNode putIfAbsent(ZNodeLabel.Component label, Set<ObjectName> names) {
+            JmxBeanNode child = delegate().get(label);
+            if (child != null) {
+                child.setNames(names);
+            } else {
+                child = child(names, label, this);
+                delegate().put(label, child);
+            }
+            return child;
+        }
+        
+        @Override
+        protected JmxBeanNode newChild(ZNodeLabel.Component label) {
+            return child(label, this);
+        }
+    }
     
     public static enum ServerSchema {
         STANDALONE_SERVER(Key.STANDALONE_SERVER),
         REPLICATED_SERVER(Key.REPLICATED_SERVER);
         
-        private final ZNodeLabelTrie<ZNodeLabelTrie.SimpleNode> trie;
+        private final DefaultsZNodeLabelTrie<JmxSchemaNode> trie;
         
         private ServerSchema(Key rootKey) {
-            this.trie = ZNodeLabelTrie.of(ZNodeLabelTrie.SimpleNode.root());
-            ZNodeLabelTrie.SimpleNode root = this.trie.root().add(rootKey.value());
+            this.trie = DefaultsZNodeLabelTrie.of(JmxSchemaNode.root());
+            JmxSchemaNode root = this.trie.root().putIfAbsent(rootKey.label());
             
             switch (rootKey) {
             case STANDALONE_SERVER:
             {
-                root.add(Key.IN_MEMORY_DATA_TREE.value());
+                root.putIfAbsent(Key.IN_MEMORY_DATA_TREE.label());
                 break;
             }
             case REPLICATED_SERVER:
             {
-                ZNodeLabelTrie.SimpleNode replica = root.add(Key.REPLICA.value());
+                JmxSchemaNode replica = root.putIfAbsent(Key.REPLICA.label());
                 Key[] roles = { Key.FOLLOWER, Key.LEADER, Key.LEADER_ELECTION };
                 for (Key k: roles) {
-                    ZNodeLabelTrie.SimpleNode role = replica.add(k.value());
+                    JmxSchemaNode role = replica.putIfAbsent(k.label());
                     if (k != Key.LEADER_ELECTION) {
-                        role.add(Key.IN_MEMORY_DATA_TREE.value());
+                        role.putIfAbsent(Key.IN_MEMORY_DATA_TREE.label());
                     }
                 }
                 break;
@@ -219,50 +280,69 @@ public abstract class Jmx {
             }
         }
         
-        public ZNodeLabelTrie<ZNodeLabelTrie.SimpleNode> asTrie() {
+        public DefaultsZNodeLabelTrie<JmxSchemaNode> asTrie() {
             return trie;
         }
         
         public ZNodeLabel.Path pathOf(Key key) {
-            for (ZNodeLabelTrie.SimpleNode n: asTrie()) {
+            for (JmxSchemaNode n: asTrie()) {
                 ZNodeLabel.Path path = n.path();
                 if (path.isRoot()) {
                     continue;
                 }
-                if (path.tail().toString().equals(key.value())) {
+                if (path.tail().toString().equals(key.toString())) {
                     return path;
                 }
             }
             throw new IllegalArgumentException(key.toString());
         }
         
-        public ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> instantiate(MBeanServerConnection mbeans) throws IOException {
-            ZNodeLabelTrie<ZNodeLabelTrie.ValueNode<Set<ObjectName>>> instance = ZNodeLabelTrie.of(ObjectNameNodeFactory.root());
-            for (ZNodeLabelTrie.SimpleNode n: asTrie()) {
+        public DefaultsZNodeLabelTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
+            DefaultsZNodeLabelTrie<JmxBeanNode> instance = DefaultsZNodeLabelTrie.of(JmxBeanNode.root());
+            for (JmxSchemaNode n: asTrie()) {
                 ZNodeLabel.Path path = n.path();
                 if (path.isRoot()) {
                     continue;
                 }
-                if (path.toString().indexOf('%') >= 0) {
-                    // convert format to pattern
-                    ObjectName pattern = PathObjectName.of(ZNodeLabel.Path.of(patternOf(path.toString())));
-                    Set<ObjectName> results = mbeans.queryNames(pattern, null);
-                    if (results.size() > 0) {
-                        ZNodeLabelTrie.ValueNode<Set<ObjectName>> node = instance.root().add(path);
-                        for (ObjectName result: results) {
-                            node.get().add(result);
-                        }
-                    }
-                } else {
-                    ObjectName result = PathObjectName.of(path);
-                    if (mbeans.isRegistered(result)) {
-                        ZNodeLabelTrie.ValueNode<Set<ObjectName>> node = instance.root().add(path);
-                        node.get().add(result);
-                    }
-                }
+                instance.putIfAbsent(path.head(), new InstantiateVisitor(n, mbeans));
             }
             
             return instance;
+        }
+    }
+    
+    public static class InstantiateVisitor implements Function<JmxBeanNode, Void> {
+        
+        private final JmxSchemaNode schema;
+        private final MBeanServerConnection mbeans;
+        
+        public InstantiateVisitor(JmxSchemaNode schema, MBeanServerConnection mbeans) {
+            this.schema = schema;
+            this.mbeans = mbeans;
+        }
+        
+        @Override
+        public Void apply(JmxBeanNode parent) {
+            try {
+                ZNodeLabel.Path path = schema.path();
+                Set<ObjectName> names;
+                if (path.toString().indexOf('%') >= 0) {
+                    // convert format to pattern
+                    ObjectName pattern = PathObjectName.of(ZNodeLabel.Path.of(patternOf(path.toString())));
+                    names = mbeans.queryNames(pattern, null);
+                } else {
+                    ObjectName result = PathObjectName.of(path);
+                    if (mbeans.isRegistered(result)) {
+                        names = ImmutableSet.of(result);
+                    } else {
+                        names = ImmutableSet.of();
+                    }
+                }
+                parent.putIfAbsent((ZNodeLabel.Component) schema.parent().label(), names);
+            } catch (IOException e) {
+                throw Throwables.propagate(e);
+            }
+            return null;
         }
     }
     

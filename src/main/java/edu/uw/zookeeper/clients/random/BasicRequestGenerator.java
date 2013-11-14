@@ -4,7 +4,7 @@ import java.util.Random;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.uw.zookeeper.client.ZNodeViewCache;
+import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.CreateMode;
 import edu.uw.zookeeper.data.Operations;
@@ -16,12 +16,12 @@ import edu.uw.zookeeper.protocol.proto.Stats;
 
 public class BasicRequestGenerator implements Generator<Records.Request> {
 
-    public static BasicRequestGenerator create(
-            ZNodeViewCache<?,?,?> cache) {
+    public static <E extends ZNodeCacheTrie.CachedNode<E>> BasicRequestGenerator create(
+            ZNodeCacheTrie<? extends E,?,?> cache) {
         Random random = new Random();
         RandomLabel labels = RandomLabel.create(random, 1, 9);
         RandomData datum = RandomData.create(random, 0, 1024);
-        CachedPaths paths = CachedPaths.create(cache, random);
+        CachedPaths<?> paths = CachedPaths.create(cache, random);
         ImmutableRandomFromList<OpCode> opcodes = ImmutableRandomFromList.create(random, BASIC_OPCODES);
         return new BasicRequestGenerator(
                 random, opcodes, paths, labels, datum, cache);
@@ -37,7 +37,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
             OpCode.SYNC);
     
     protected final Random random;
-    protected final ZNodeViewCache<?,?,?> cache;
+    protected final ZNodeCacheTrie<?,?,?> cache;
     protected final Generator<OpCode> opcodes;
     protected final Generator<ZNodeLabel.Path> paths;
     protected final Generator<ZNodeLabel.Component> labels;
@@ -49,7 +49,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
             Generator<ZNodeLabel.Path> paths,
             Generator<ZNodeLabel.Component> labels, 
             Generator<byte[]> datum, 
-            ZNodeViewCache<?,?,?> client) {
+            ZNodeCacheTrie<?,?,?> client) {
         this.random = random;
         this.opcodes = opcodes;
         this.labels = labels;
@@ -64,19 +64,19 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
         do {
             path = paths.next();
         } while (ZNodeLabel.Path.zookeeper().prefixOf(path));
-        ZNodeViewCache.NodeCache<?> node = cache.trie().get(path);
+        ZNodeCacheTrie.CachedNode<?> node = cache.get(path);
         while (node == null) {
             path = paths.next();
-            node = cache.trie().get(path);
+            node = cache.get(path);
         }
-        StampedReference<Records.StatGetter> statView = node.asView(ZNodeViewCache.View.STAT);
+        StampedReference<Records.StatGetter> statView = node.getCached(Records.StatGetter.class);
         Records.StatGetter stat = (statView == null) ? null : statView.get();
         int version = (stat == null) ? Stats.VERSION_ANY : stat.getStat().getVersion();
         OpCode opcode;
         while (true) {
             opcode = opcodes.next();
             if (opcode == OpCode.DELETE) {
-                if (path.isRoot() || !cache.trie().get(path).isEmpty()) {
+                if (path.isRoot() || !cache.get(path).isEmpty()) {
                     continue;
                 }
             } else if ((opcode == OpCode.CREATE) || (opcode == OpCode.CREATE2)) {
