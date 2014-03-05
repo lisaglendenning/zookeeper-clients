@@ -27,13 +27,13 @@ import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 @RunWith(JUnit4.class)
-public class ZNodeDataTrieTest {
+public class LabelTrieZNodeTest {
     
     protected final Logger logger = LogManager.getLogger();
     
     @Test(timeout=10000)
     public void testRandom() throws Exception {
-        ZNodeDataTrieExecutor executor = ZNodeDataTrieExecutor.defaults();
+        LabelTrieZNodeExecutor executor = LabelTrieZNodeExecutor.defaults();
         ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Records.Request, Message.ServerResponse<?>> cache = 
                 ZNodeCacheTrie.newInstance(SessionClientExecutor.create(1, executor));
         int iterations = 100;

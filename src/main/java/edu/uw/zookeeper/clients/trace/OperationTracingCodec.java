@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Queue;
 
-import net.engio.mbassy.PubSubSupport;
+import net.engio.mbassy.bus.PubSubSupport;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;

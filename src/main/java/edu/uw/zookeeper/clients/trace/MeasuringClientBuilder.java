@@ -2,7 +2,7 @@ package edu.uw.zookeeper.clients.trace;
 
 import java.util.Set;
 
-import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.config.SyncBusConfiguration;
 import net.engio.mbassy.bus.SyncMessageBus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +20,7 @@ import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.RuntimeModule;
-import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.data.ZNodePath;
 import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.proto.Records;
 
@@ -147,6 +147,6 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
 
     @Override
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(Generators.constant(ZNodeLabel.Path.root()));
+        return PathedRequestGenerator.exists(Generators.constant(ZNodePath.root()));
     }
 }

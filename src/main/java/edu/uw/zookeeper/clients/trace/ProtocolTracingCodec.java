@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import net.engio.mbassy.PubSubSupport;
+import net.engio.mbassy.bus.PubSubSupport;
 
 import com.google.common.base.Optional;
 

@@ -9,15 +9,15 @@ import com.google.common.collect.Lists;
 import edu.uw.zookeeper.client.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.common.Automaton;
-import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.data.ZNodePath;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.ProtocolState;
 import edu.uw.zookeeper.protocol.proto.IWatcherEvent;
 
-public class CachedPaths<E extends ZNodeCacheTrie.CachedNode<E>> implements Generator<ZNodeLabel.Path>, ZNodeCacheTrie.CacheSessionListener<E> {
+public class CachedPaths<E extends ZNodeCacheTrie.CachedNode<E>> implements Generator<ZNodePath>, ZNodeCacheTrie.CacheSessionListener<E> {
 
     public static <E extends ZNodeCacheTrie.CachedNode<E>> CachedPaths<E> create(ZNodeCacheTrie<? extends E,?,?> cache, Random random) {
-        CachedPaths<E> instance = new CachedPaths<E>(random, ImmutableList.<ZNodeLabel.Path>of());
+        CachedPaths<E> instance = new CachedPaths<E>(random, ImmutableList.<ZNodePath>of());
         cache.subscribe(instance);
         synchronized (instance) {
             for (ZNodeCacheTrie.CachedNode<?> e: cache) {
@@ -28,14 +28,14 @@ public class CachedPaths<E extends ZNodeCacheTrie.CachedNode<E>> implements Gene
     }
 
     protected final Random random;
-    protected final List<ZNodeLabel.Path> elements;
+    protected final List<ZNodePath> elements;
     
-    public CachedPaths(Random random, Iterable<ZNodeLabel.Path> elements) {
+    public CachedPaths(Random random, Iterable<ZNodePath> elements) {
         this.random = random;
         this.elements = Lists.newArrayList(elements);
     }
 
-    public synchronized boolean add(ZNodeLabel.Path element) {
+    public synchronized boolean add(ZNodePath element) {
         if (! elements.contains(element)) {
             return elements.add(element);
         } else {
@@ -43,12 +43,12 @@ public class CachedPaths<E extends ZNodeCacheTrie.CachedNode<E>> implements Gene
         }
     }
 
-    public synchronized boolean remove(ZNodeLabel.Path element) {
+    public synchronized boolean remove(ZNodePath element) {
         return elements.remove(element);
     }
 
     @Override
-    public synchronized ZNodeLabel.Path next() {
+    public synchronized ZNodePath next() {
         int size = elements.size();
         if (size == 0) {
             return null;

@@ -3,7 +3,7 @@ package edu.uw.zookeeper.clients.trace;
 import java.util.List;
 import java.util.Set;
 
-import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.config.SyncBusConfiguration;
 import net.engio.mbassy.bus.SyncMessageBus;
 
 import org.apache.logging.log4j.LogManager;
@@ -40,7 +40,7 @@ import edu.uw.zookeeper.common.Promise;
 import edu.uw.zookeeper.common.PromiseTask;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
-import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.data.ZNodePath;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
@@ -186,7 +186,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
     
 
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(Generators.constant(ZNodeLabel.Path.root()));
+        return PathedRequestGenerator.exists(Generators.constant(ZNodePath.root()));
     }
     
     protected Runnable getDefaultRunnable() {

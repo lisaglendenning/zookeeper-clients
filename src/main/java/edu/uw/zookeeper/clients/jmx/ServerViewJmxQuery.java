@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
@@ -22,8 +23,8 @@ import edu.uw.zookeeper.ServerRoleView;
 import edu.uw.zookeeper.ServerView;
 import edu.uw.zookeeper.clients.jmx.Jmx.JmxBeanNode;
 import edu.uw.zookeeper.common.DefaultsFactory;
-import edu.uw.zookeeper.data.DefaultsZNodeLabelTrie;
-import edu.uw.zookeeper.data.ZNodeLabel;
+import edu.uw.zookeeper.data.LabelTrie;
+import edu.uw.zookeeper.data.ZNodePath;
 
 public abstract class ServerViewJmxQuery {
 
@@ -65,7 +66,7 @@ public abstract class ServerViewJmxQuery {
     
     public static ServerInetAddressView addressViewOf(MBeanServerConnection mbeans) throws IOException {
         for (Jmx.ServerSchema schema: Jmx.ServerSchema.values()) {
-            DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+            LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
             if (objectNames == null || objectNames.isEmpty()) {
                 continue;
             }
@@ -110,12 +111,12 @@ public abstract class ServerViewJmxQuery {
     
     public static EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleViewOf(MBeanServerConnection mbeans) throws IOException {
         Jmx.ServerSchema schema = Jmx.ServerSchema.REPLICATED_SERVER;
-        DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+        LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
         if (objectNames == null || objectNames.isEmpty()) {
             return null;
         }
 
-        Map<EnsembleRole, ZNodeLabel.Path> roles = 
+        Map<EnsembleRole, ZNodePath> roles = 
                 ImmutableMap.of(
                         EnsembleRole.LOOKING,
                         schema.pathOf(Jmx.Key.LEADER_ELECTION),
@@ -133,7 +134,7 @@ public abstract class ServerViewJmxQuery {
             }
             ServerInetAddressView addressView = ServerInetAddressView.fromString(address);
             EnsembleRole role = EnsembleRole.UNKNOWN;
-            for (Map.Entry<EnsembleRole, ZNodeLabel.Path> entry: roles.entrySet()) {
+            for (Map.Entry<EnsembleRole, ZNodePath> entry: roles.entrySet()) {
                 JmxBeanNode node = objectNames.get(entry.getValue());
                 if (node != null) {
                     ObjectName nodeName = Iterables.getOnlyElement(node.getNames());

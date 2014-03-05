@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import net.engio.mbassy.bus.SyncBusConfiguration;
+import net.engio.mbassy.bus.config.SyncBusConfiguration;
 import net.engio.mbassy.bus.SyncMessageBus;
 
 import org.apache.logging.log4j.LogManager;

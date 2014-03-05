@@ -20,11 +20,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import edu.uw.zookeeper.common.DefaultsFactory;
 import edu.uw.zookeeper.common.Factory;
-import edu.uw.zookeeper.data.DefaultsZNodeLabelTrie;
+import edu.uw.zookeeper.data.DefaultsLabelTrieNode;
+import edu.uw.zookeeper.data.SimpleLabelTrie;
 import edu.uw.zookeeper.data.ZNodeLabel;
-import edu.uw.zookeeper.data.ZNodeLabelTrie;
+import edu.uw.zookeeper.data.LabelTrie;
+import edu.uw.zookeeper.data.ZNodePath;
+import edu.uw.zookeeper.data.ZNodePath.AbsoluteZNodePath;
+import edu.uw.zookeeper.data.ZNodePathComponent;
 
 public abstract class Jmx {
     
@@ -39,7 +44,7 @@ public abstract class Jmx {
         try {
             MBeanServerConnection mbeans = connector.getMBeanServerConnection();
             for (ServerSchema schema: ServerSchema.values()) {
-                DefaultsZNodeLabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+                LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
                 if (! objectNames.isEmpty()) {
                     for (JmxBeanNode e: objectNames) {
                         System.out.printf("%s = %s%n", e.path(), e.getNames());
@@ -67,15 +72,15 @@ public abstract class Jmx {
         public static char KEY_SEPARATOR = '=';
         public static char PROPERTY_SEPARATOR = ',';
         
-        public static ObjectName of(ZNodeLabel.Path input) {
+        public static ObjectName of(ZNodePath input) {
             return PathToObjectName.ZOOKEEPER_SERVICE.apply(input);
         }
         
-        public static ZNodeLabel.Path of(ObjectName input) {
+        public static ZNodePath of(ObjectName input) {
             return ObjectNameToPath.ZOOKEEPER_SERVICE.apply(input);
         }
         
-        public static enum PathToObjectName implements Function<ZNodeLabel.Path, ObjectName> {
+        public static enum PathToObjectName implements Function<ZNodePath, ObjectName> {
             ZOOKEEPER_SERVICE(Domain.ZOOKEEPER_SERVICE);
         
             public static String KEY_FORMAT = "name%d";
@@ -89,10 +94,10 @@ public abstract class Jmx {
             }
             
             @Override
-            public ObjectName apply(ZNodeLabel.Path input) {
+            public ObjectName apply(ZNodePath input) {
                 List<String> properties = Lists.newLinkedList();
                 int index = 0;
-                for (ZNodeLabel.Component component: input) {
+                for (ZNodePathComponent component: input) {
                     properties.add(String.format(PROPERTY_FORMAT, index, component.toString()));
                     index += 1;
                 }
@@ -100,21 +105,21 @@ public abstract class Jmx {
             }
         }
         
-        public static enum ObjectNameToPath implements Function<ObjectName, ZNodeLabel.Path> {
+        public static enum ObjectNameToPath implements Function<ObjectName, ZNodePath> {
             ZOOKEEPER_SERVICE;
 
             public static Splitter PROPERTY_SPLITTER = Splitter.on(PROPERTY_SEPARATOR).omitEmptyStrings();
             public static Splitter KEY_SPLITTER = Splitter.on(KEY_SEPARATOR);
             
             @Override
-            public ZNodeLabel.Path apply(ObjectName input) {
+            public ZNodePath apply(ObjectName input) {
                 List<ZNodeLabel> components = Lists.newLinkedList();
-                components.add(ZNodeLabel.Path.root());
+                components.add(ZNodePath.root());
                 for (String property: PROPERTY_SPLITTER.split(input.getCanonicalKeyPropertyListString())) {
                     String component = Iterables.toArray(KEY_SPLITTER.split(property), String.class)[1];
-                    components.add(ZNodeLabel.Component.of(component));
+                    components.add(ZNodePathComponent.of(component));
                 }
-                return (ZNodeLabel.Path) ZNodeLabel.joined(components.iterator());
+                return (ZNodePath) ZNodePath.joined(components.iterator());
             }
         }
     }
@@ -161,8 +166,8 @@ public abstract class Jmx {
             this.value = value;
         }
         
-        public ZNodeLabel.Component label() {
-            return ZNodeLabel.Component.of(value);
+        public ZNodePathComponent label() {
+            return ZNodePathComponent.of(value);
         }
 
         @Override
@@ -171,33 +176,33 @@ public abstract class Jmx {
         }
     }
     
-    public static class JmxSchemaNode extends DefaultsZNodeLabelTrie.AbstractDefaultsNode<JmxSchemaNode> {
+    public static class JmxSchemaNode extends DefaultsLabelTrieNode.AbstractDefaultsNode<JmxSchemaNode> {
 
         public static JmxSchemaNode root() {
-            return new JmxSchemaNode(ZNodeLabelTrie.<JmxSchemaNode>strongPointer(ZNodeLabel.none(), null));
+            return new JmxSchemaNode(SimpleLabelTrie.<JmxSchemaNode>rootPointer());
         }
         
         protected JmxSchemaNode(
-                ZNodeLabelTrie.Pointer<? extends JmxSchemaNode> parent) {
-            super(ZNodeLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel.Component, JmxSchemaNode>newHashMap());
+                LabelTrie.Pointer<? extends JmxSchemaNode> parent) {
+            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel, JmxSchemaNode>newHashMap());
         }
 
         @Override
-        protected JmxSchemaNode newChild(ZNodeLabel.Component label) {
-            return new JmxSchemaNode(ZNodeLabelTrie.weakPointer(label, this));
+        protected JmxSchemaNode newChild(ZNodeLabel label) {
+            return new JmxSchemaNode(SimpleLabelTrie.weakPointer(label, this));
         }
     }
     
-    public static class JmxBeanNode extends DefaultsZNodeLabelTrie.AbstractDefaultsNode<JmxBeanNode> {
+    public static class JmxBeanNode extends DefaultsLabelTrieNode.AbstractDefaultsNode<JmxBeanNode> {
 
         public static JmxBeanNode root() {
             return new JmxBeanNode(
                     ImmutableSet.<ObjectName>of(),
-                    ZNodeLabelTrie.<JmxBeanNode>strongPointer(ZNodeLabel.none(), null));
+                    SimpleLabelTrie.<JmxBeanNode>rootPointer());
         }
 
         public static JmxBeanNode child(
-                ZNodeLabel.Component label, JmxBeanNode parent) {
+                ZNodeLabel label, JmxBeanNode parent) {
             return child(
                     ImmutableSet.<ObjectName>of(),
                     label,
@@ -206,19 +211,19 @@ public abstract class Jmx {
 
         public static JmxBeanNode child(
                 Set<ObjectName> names,
-                ZNodeLabel.Component label,
+                ZNodeLabel label,
                 JmxBeanNode parent) {
             return new JmxBeanNode(
                     ImmutableSet.copyOf(names),
-                    ZNodeLabelTrie.<JmxBeanNode>weakPointer(label, parent));
+                    SimpleLabelTrie.<JmxBeanNode>weakPointer(label, parent));
         }
         
         protected volatile ImmutableSet<ObjectName> names;
         
         protected JmxBeanNode(
                 ImmutableSet<ObjectName> names,
-                ZNodeLabelTrie.Pointer<? extends JmxBeanNode> parent) {
-            super(ZNodeLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel.Component, JmxBeanNode>newHashMap());
+                LabelTrie.Pointer<? extends JmxBeanNode> parent) {
+            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel, JmxBeanNode>newHashMap());
             this.names = names;
         }
         
@@ -230,7 +235,7 @@ public abstract class Jmx {
             this.names = ImmutableSet.copyOf(names);
         }
         
-        public synchronized JmxBeanNode putIfAbsent(ZNodeLabel.Component label, Set<ObjectName> names) {
+        public synchronized JmxBeanNode putIfAbsent(ZNodeLabel label, Set<ObjectName> names) {
             JmxBeanNode child = delegate().get(label);
             if (child != null) {
                 child.setNames(names);
@@ -242,7 +247,7 @@ public abstract class Jmx {
         }
         
         @Override
-        protected JmxBeanNode newChild(ZNodeLabel.Component label) {
+        protected JmxBeanNode newChild(ZNodeLabel label) {
             return child(label, this);
         }
     }
@@ -251,10 +256,10 @@ public abstract class Jmx {
         STANDALONE_SERVER(Key.STANDALONE_SERVER),
         REPLICATED_SERVER(Key.REPLICATED_SERVER);
         
-        private final DefaultsZNodeLabelTrie<JmxSchemaNode> trie;
+        private final LabelTrie<JmxSchemaNode> trie;
         
         private ServerSchema(Key rootKey) {
-            this.trie = DefaultsZNodeLabelTrie.of(JmxSchemaNode.root());
+            this.trie = SimpleLabelTrie.forRoot(JmxSchemaNode.root());
             JmxSchemaNode root = this.trie.root().putIfAbsent(rootKey.label());
             
             switch (rootKey) {
@@ -280,13 +285,13 @@ public abstract class Jmx {
             }
         }
         
-        public DefaultsZNodeLabelTrie<JmxSchemaNode> asTrie() {
+        public LabelTrie<JmxSchemaNode> asTrie() {
             return trie;
         }
         
-        public ZNodeLabel.Path pathOf(Key key) {
+        public ZNodePath pathOf(Key key) {
             for (JmxSchemaNode n: asTrie()) {
-                ZNodeLabel.Path path = n.path();
+                ZNodePath path = n.path();
                 if (path.isRoot()) {
                     continue;
                 }
@@ -297,38 +302,17 @@ public abstract class Jmx {
             throw new IllegalArgumentException(key.toString());
         }
         
-        public DefaultsZNodeLabelTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
-            DefaultsZNodeLabelTrie<JmxBeanNode> instance = DefaultsZNodeLabelTrie.of(JmxBeanNode.root());
+        public LabelTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
+            LabelTrie<JmxBeanNode> instance = SimpleLabelTrie.forRoot(JmxBeanNode.root());
             for (JmxSchemaNode n: asTrie()) {
-                ZNodeLabel.Path path = n.path();
+                AbsoluteZNodePath path = n.path();
                 if (path.isRoot()) {
                     continue;
                 }
-                instance.putIfAbsent(path.head(), new InstantiateVisitor(n, mbeans));
-            }
-            
-            return instance;
-        }
-    }
-    
-    public static class InstantiateVisitor implements Function<JmxBeanNode, Void> {
-        
-        private final JmxSchemaNode schema;
-        private final MBeanServerConnection mbeans;
-        
-        public InstantiateVisitor(JmxSchemaNode schema, MBeanServerConnection mbeans) {
-            this.schema = schema;
-            this.mbeans = mbeans;
-        }
-        
-        @Override
-        public Void apply(JmxBeanNode parent) {
-            try {
-                ZNodeLabel.Path path = schema.path();
                 Set<ObjectName> names;
                 if (path.toString().indexOf('%') >= 0) {
                     // convert format to pattern
-                    ObjectName pattern = PathObjectName.of(ZNodeLabel.Path.of(patternOf(path.toString())));
+                    ObjectName pattern = PathObjectName.of(ZNodePath.of(patternOf(path.toString())));
                     names = mbeans.queryNames(pattern, null);
                 } else {
                     ObjectName result = PathObjectName.of(path);
@@ -338,14 +322,14 @@ public abstract class Jmx {
                         names = ImmutableSet.of();
                     }
                 }
-                parent.putIfAbsent((ZNodeLabel.Component) schema.parent().label(), names);
-            } catch (IOException e) {
-                throw Throwables.propagate(e);
+                JmxBeanNode parent = JmxBeanNode.putIfAbsent(instance, (AbsoluteZNodePath) path.head());
+                parent.putIfAbsent((ZNodePathComponent) n.parent().label(), names);
             }
-            return null;
+            
+            return instance;
         }
     }
-    
+
     public static enum PlatformMBeanServerFactory implements Factory<MBeanServer> {
         PLATFORM;
         
