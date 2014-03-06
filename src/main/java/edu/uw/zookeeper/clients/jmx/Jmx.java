@@ -23,13 +23,15 @@ import com.google.common.collect.Maps;
 
 import edu.uw.zookeeper.common.DefaultsFactory;
 import edu.uw.zookeeper.common.Factory;
-import edu.uw.zookeeper.data.DefaultsLabelTrieNode;
-import edu.uw.zookeeper.data.SimpleLabelTrie;
+import edu.uw.zookeeper.data.DefaultsNode;
+import edu.uw.zookeeper.data.RelativeZNodePath;
+import edu.uw.zookeeper.data.SimpleNameTrie;
 import edu.uw.zookeeper.data.ZNodeLabel;
-import edu.uw.zookeeper.data.LabelTrie;
+import edu.uw.zookeeper.data.NameTrie;
+import edu.uw.zookeeper.data.ZNodeLabelVector;
+import edu.uw.zookeeper.data.ZNodeName;
 import edu.uw.zookeeper.data.ZNodePath;
-import edu.uw.zookeeper.data.ZNodePath.AbsoluteZNodePath;
-import edu.uw.zookeeper.data.ZNodePathComponent;
+import edu.uw.zookeeper.data.AbsoluteZNodePath;
 
 public abstract class Jmx {
     
@@ -44,7 +46,7 @@ public abstract class Jmx {
         try {
             MBeanServerConnection mbeans = connector.getMBeanServerConnection();
             for (ServerSchema schema: ServerSchema.values()) {
-                LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+                NameTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
                 if (! objectNames.isEmpty()) {
                     for (JmxBeanNode e: objectNames) {
                         System.out.printf("%s = %s%n", e.path(), e.getNames());
@@ -97,8 +99,8 @@ public abstract class Jmx {
             public ObjectName apply(ZNodePath input) {
                 List<String> properties = Lists.newLinkedList();
                 int index = 0;
-                for (ZNodePathComponent component: input) {
-                    properties.add(String.format(PROPERTY_FORMAT, index, component.toString()));
+                for (ZNodeLabel label: input) {
+                    properties.add(String.format(PROPERTY_FORMAT, index, label.toString()));
                     index += 1;
                 }
                 return domain.apply(JOINER.join(properties));
@@ -113,13 +115,12 @@ public abstract class Jmx {
             
             @Override
             public ZNodePath apply(ObjectName input) {
-                List<ZNodeLabel> components = Lists.newLinkedList();
-                components.add(ZNodePath.root());
+                List<String> labels = Lists.newLinkedList();
                 for (String property: PROPERTY_SPLITTER.split(input.getCanonicalKeyPropertyListString())) {
-                    String component = Iterables.toArray(KEY_SPLITTER.split(property), String.class)[1];
-                    components.add(ZNodePathComponent.of(component));
+                    String label = Iterables.toArray(KEY_SPLITTER.split(property), String.class)[1];
+                    labels.add(label);
                 }
-                return (ZNodePath) ZNodePath.joined(components.iterator());
+                return ZNodePath.root().join(RelativeZNodePath.fromString(ZNodeLabelVector.join(labels.iterator())));
             }
         }
     }
@@ -166,8 +167,8 @@ public abstract class Jmx {
             this.value = value;
         }
         
-        public ZNodePathComponent label() {
-            return ZNodePathComponent.of(value);
+        public ZNodeLabel label() {
+            return ZNodeLabel.fromString(value);
         }
 
         @Override
@@ -176,29 +177,29 @@ public abstract class Jmx {
         }
     }
     
-    public static class JmxSchemaNode extends DefaultsLabelTrieNode.AbstractDefaultsNode<JmxSchemaNode> {
+    public static class JmxSchemaNode extends DefaultsNode.AbstractDefaultsNode<JmxSchemaNode> {
 
         public static JmxSchemaNode root() {
-            return new JmxSchemaNode(SimpleLabelTrie.<JmxSchemaNode>rootPointer());
+            return new JmxSchemaNode(SimpleNameTrie.<JmxSchemaNode>rootPointer());
         }
         
         protected JmxSchemaNode(
-                LabelTrie.Pointer<? extends JmxSchemaNode> parent) {
-            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel, JmxSchemaNode>newHashMap());
+                NameTrie.Pointer<? extends JmxSchemaNode> parent) {
+            super(SimpleNameTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxSchemaNode>newHashMap());
         }
 
         @Override
-        protected JmxSchemaNode newChild(ZNodeLabel label) {
-            return new JmxSchemaNode(SimpleLabelTrie.weakPointer(label, this));
+        protected JmxSchemaNode newChild(ZNodeName name) {
+            return new JmxSchemaNode(SimpleNameTrie.weakPointer(name, this));
         }
     }
     
-    public static class JmxBeanNode extends DefaultsLabelTrieNode.AbstractDefaultsNode<JmxBeanNode> {
+    public static class JmxBeanNode extends DefaultsNode.AbstractDefaultsNode<JmxBeanNode> {
 
         public static JmxBeanNode root() {
             return new JmxBeanNode(
                     ImmutableSet.<ObjectName>of(),
-                    SimpleLabelTrie.<JmxBeanNode>rootPointer());
+                    SimpleNameTrie.<JmxBeanNode>rootPointer());
         }
 
         public static JmxBeanNode child(
@@ -215,15 +216,15 @@ public abstract class Jmx {
                 JmxBeanNode parent) {
             return new JmxBeanNode(
                     ImmutableSet.copyOf(names),
-                    SimpleLabelTrie.<JmxBeanNode>weakPointer(label, parent));
+                    SimpleNameTrie.<JmxBeanNode>weakPointer(label, parent));
         }
         
         protected volatile ImmutableSet<ObjectName> names;
         
         protected JmxBeanNode(
                 ImmutableSet<ObjectName> names,
-                LabelTrie.Pointer<? extends JmxBeanNode> parent) {
-            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeLabel, JmxBeanNode>newHashMap());
+                NameTrie.Pointer<? extends JmxBeanNode> parent) {
+            super(SimpleNameTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxBeanNode>newHashMap());
             this.names = names;
         }
         
@@ -247,8 +248,8 @@ public abstract class Jmx {
         }
         
         @Override
-        protected JmxBeanNode newChild(ZNodeLabel label) {
-            return child(label, this);
+        protected JmxBeanNode newChild(ZNodeName label) {
+            return child((ZNodeLabel) label, this);
         }
     }
     
@@ -256,10 +257,10 @@ public abstract class Jmx {
         STANDALONE_SERVER(Key.STANDALONE_SERVER),
         REPLICATED_SERVER(Key.REPLICATED_SERVER);
         
-        private final LabelTrie<JmxSchemaNode> trie;
+        private final NameTrie<JmxSchemaNode> trie;
         
         private ServerSchema(Key rootKey) {
-            this.trie = SimpleLabelTrie.forRoot(JmxSchemaNode.root());
+            this.trie = SimpleNameTrie.forRoot(JmxSchemaNode.root());
             JmxSchemaNode root = this.trie.root().putIfAbsent(rootKey.label());
             
             switch (rootKey) {
@@ -285,7 +286,7 @@ public abstract class Jmx {
             }
         }
         
-        public LabelTrie<JmxSchemaNode> asTrie() {
+        public NameTrie<JmxSchemaNode> asTrie() {
             return trie;
         }
         
@@ -295,24 +296,24 @@ public abstract class Jmx {
                 if (path.isRoot()) {
                     continue;
                 }
-                if (path.tail().toString().equals(key.toString())) {
+                if (path.label().toString().equals(key.toString())) {
                     return path;
                 }
             }
             throw new IllegalArgumentException(key.toString());
         }
         
-        public LabelTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
-            LabelTrie<JmxBeanNode> instance = SimpleLabelTrie.forRoot(JmxBeanNode.root());
+        public NameTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
+            NameTrie<JmxBeanNode> instance = SimpleNameTrie.forRoot(JmxBeanNode.root());
             for (JmxSchemaNode n: asTrie()) {
-                AbsoluteZNodePath path = n.path();
+                ZNodePath path = n.path();
                 if (path.isRoot()) {
                     continue;
                 }
                 Set<ObjectName> names;
                 if (path.toString().indexOf('%') >= 0) {
                     // convert format to pattern
-                    ObjectName pattern = PathObjectName.of(ZNodePath.of(patternOf(path.toString())));
+                    ObjectName pattern = PathObjectName.of(ZNodePath.fromString(patternOf(path.toString())));
                     names = mbeans.queryNames(pattern, null);
                 } else {
                     ObjectName result = PathObjectName.of(path);
@@ -322,8 +323,8 @@ public abstract class Jmx {
                         names = ImmutableSet.of();
                     }
                 }
-                JmxBeanNode parent = JmxBeanNode.putIfAbsent(instance, (AbsoluteZNodePath) path.head());
-                parent.putIfAbsent((ZNodePathComponent) n.parent().label(), names);
+                JmxBeanNode parent = JmxBeanNode.putIfAbsent(instance, ((AbsoluteZNodePath) path).parent());
+                parent.putIfAbsent((ZNodeLabel) n.parent().name(), names);
             }
             
             return instance;

@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.client.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;

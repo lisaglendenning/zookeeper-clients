@@ -2,7 +2,7 @@ package edu.uw.zookeeper.clients.random;
 
 import java.util.Random;
 
-import edu.uw.zookeeper.client.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.ZNodePath;

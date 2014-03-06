@@ -5,9 +5,9 @@ import static com.google.common.base.Preconditions.*;
 import java.util.Random;
 
 import edu.uw.zookeeper.clients.common.Generator;
-import edu.uw.zookeeper.data.ZNodePathComponent;
+import edu.uw.zookeeper.data.ZNodeLabel;
 
-public class RandomLabel implements Generator<ZNodePathComponent> {
+public class RandomLabel implements Generator<ZNodeLabel> {
 
     public static RandomLabel create(Random random, int minLength, int lengthRange) {
         return new RandomLabel(random, ALPHABET, minLength, lengthRange);
@@ -39,8 +39,8 @@ public class RandomLabel implements Generator<ZNodePathComponent> {
     }
     
     @Override
-    public ZNodePathComponent next() {
-        ZNodePathComponent component = null;
+    public ZNodeLabel next() {
+        ZNodeLabel next = null;
         do {
             int length = random.nextInt(lengthRange) + minLength;
             char[] chars = new char[length];
@@ -48,11 +48,11 @@ public class RandomLabel implements Generator<ZNodePathComponent> {
                 chars[i] = alphabet[random.nextInt(alphabet.length)];
             }
             try {
-                component = ZNodePathComponent.validated(String.valueOf(chars));
+                next = ZNodeLabel.validated(String.valueOf(chars));
             } catch (IllegalArgumentException e) {
-                component = null;
+                next = null;
             }
-        } while ((component == null) || component.isReserved());
-        return component;
+        } while ((next == null) || next.isReserved());
+        return next;
     }
 }

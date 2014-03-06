@@ -11,11 +11,10 @@ import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.common.Processors;
 import edu.uw.zookeeper.common.Promise;
 import edu.uw.zookeeper.common.SettableFuturePromise;
-import edu.uw.zookeeper.data.LabelTrie;
-import edu.uw.zookeeper.data.LabelTrieZNode;
-import edu.uw.zookeeper.data.SimpleLabelTrie;
+import edu.uw.zookeeper.data.NameTrie;
+import edu.uw.zookeeper.data.SimpleNameTrie;
 import edu.uw.zookeeper.data.TxnOperation;
-import edu.uw.zookeeper.data.LabelTrieZNode.Operators;
+import edu.uw.zookeeper.data.ZNodeNode;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolResponseMessage;
 import edu.uw.zookeeper.protocol.SessionListener;
@@ -29,30 +28,30 @@ import edu.uw.zookeeper.protocol.server.ZxidGenerator;
 import edu.uw.zookeeper.protocol.server.ZxidIncrementer;
 
 // FIXME: notifications
-public class LabelTrieZNodeExecutor implements ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>, SessionListener>,
+public class ZNodeTrieExecutor implements ClientExecutor<SessionOperation.Request<?>, Message.ServerResponse<?>, SessionListener>,
         Processors.UncheckedProcessor<SessionOperation.Request<?>, Message.ServerResponse<?>> {
 
-    public static LabelTrieZNodeExecutor defaults() {
+    public static ZNodeTrieExecutor defaults() {
         return newInstance(
-                SimpleLabelTrie.forRoot(LabelTrieZNode.root()),
+                SimpleNameTrie.forRoot(ZNodeNode.root()),
                 ZxidIncrementer.fromZero(),
                 new StrongConcurrentSet<SessionListener>());
     }
 
-    public static LabelTrieZNodeExecutor newInstance(
-            LabelTrie<LabelTrieZNode> trie,
+    public static ZNodeTrieExecutor newInstance(
+            NameTrie<ZNodeNode> trie,
             ZxidGenerator zxids,
             IConcurrentSet<SessionListener> listeners) {
-        return new LabelTrieZNodeExecutor(trie, zxids, listeners);
+        return new ZNodeTrieExecutor(trie, zxids, listeners);
     }
     
     protected final IConcurrentSet<SessionListener> listeners;
-    protected final LabelTrie<LabelTrieZNode> trie;
+    protected final NameTrie<ZNodeNode> trie;
     protected final RequestErrorProcessor<TxnOperation.Request<?>> operator;
     protected final ToTxnRequestProcessor txnProcessor;
     
-    public LabelTrieZNodeExecutor(
-            LabelTrie<LabelTrieZNode> trie,
+    public ZNodeTrieExecutor(
+            NameTrie<ZNodeNode> trie,
             ZxidGenerator zxids,
             IConcurrentSet<SessionListener> listeners) {
         this.trie = checkNotNull(trie);
@@ -61,7 +60,7 @@ public class LabelTrieZNodeExecutor implements ClientExecutor<SessionOperation.R
                 AssignZxidProcessor.newInstance(zxids));
         this.operator = RequestErrorProcessor.create(
                 ByOpcodeTxnRequestProcessor.create(
-                        ImmutableMap.copyOf(Operators.of(trie))));
+                        ImmutableMap.copyOf(ZNodeNode.Operators.of(trie))));
     }
     
     @Override

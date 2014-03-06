@@ -4,13 +4,14 @@ import java.util.Random;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.uw.zookeeper.client.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
+import edu.uw.zookeeper.data.AbsoluteZNodePath;
 import edu.uw.zookeeper.data.CreateMode;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.StampedReference;
 import edu.uw.zookeeper.data.ZNodePath;
-import edu.uw.zookeeper.data.ZNodePathComponent;
+import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.proto.OpCode;
 import edu.uw.zookeeper.protocol.proto.Records;
 import edu.uw.zookeeper.protocol.proto.Stats;
@@ -41,14 +42,14 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
     protected final ZNodeCacheTrie<?,?,?> cache;
     protected final Generator<OpCode> opcodes;
     protected final Generator<ZNodePath> paths;
-    protected final Generator<ZNodePathComponent> labels;
+    protected final Generator<ZNodeLabel> labels;
     protected final Generator<byte[]> datum;
 
     public BasicRequestGenerator(
             Random random, 
             Generator<OpCode> opcodes,
             Generator<ZNodePath> paths,
-            Generator<ZNodePathComponent> labels, 
+            Generator<ZNodeLabel> labels, 
             Generator<byte[]> datum, 
             ZNodeCacheTrie<?,?,?> client) {
         this.random = random;
@@ -64,7 +65,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
         ZNodePath path;
         do {
             path = paths.next();
-        } while (path.startsWith(ZNodePath.zookeeper()));
+        } while (path.startsWith(AbsoluteZNodePath.zookeeper()));
         ZNodeCacheTrie.CachedNode<?> node = cache.get(path);
         while (node == null) {
             path = paths.next();
@@ -91,11 +92,11 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
         Operations.Builder<? extends Records.Request> builder = Operations.Requests.fromOpCode(opcode);
         if (builder instanceof Operations.Requests.Create) {
             CreateMode mode = CreateMode.values()[random.nextInt(CreateMode.values().length)];
-            ZNodePathComponent child = labels.next();
+            ZNodeLabel child = labels.next();
             while (node.containsKey(child)) {
                 child = labels.next();
             }
-            ((Operations.Requests.Create) builder).setPath((ZNodePath) ZNodePath.joined(path, child)).setMode(mode).setData(datum.next());          
+            ((Operations.Requests.Create) builder).setPath(path.join(child)).setMode(mode).setData(datum.next());          
         } else {
             ((Operations.PathBuilder<?,?>) builder).setPath(path);
 

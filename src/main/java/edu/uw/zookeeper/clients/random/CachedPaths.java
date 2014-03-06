@@ -6,7 +6,7 @@ import java.util.Random;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import edu.uw.zookeeper.client.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.common.Automaton;
 import edu.uw.zookeeper.data.ZNodePath;

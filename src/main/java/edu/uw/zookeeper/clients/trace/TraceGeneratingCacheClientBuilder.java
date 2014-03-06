@@ -12,7 +12,7 @@ import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.client.TreeFetcher;
-import edu.uw.zookeeper.client.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.ZNodeCacheTrie;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.random.BasicRequestGenerator;
 import edu.uw.zookeeper.common.RuntimeModule;

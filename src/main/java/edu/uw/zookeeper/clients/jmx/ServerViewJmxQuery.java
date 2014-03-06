@@ -23,7 +23,7 @@ import edu.uw.zookeeper.ServerRoleView;
 import edu.uw.zookeeper.ServerView;
 import edu.uw.zookeeper.clients.jmx.Jmx.JmxBeanNode;
 import edu.uw.zookeeper.common.DefaultsFactory;
-import edu.uw.zookeeper.data.LabelTrie;
+import edu.uw.zookeeper.data.NameTrie;
 import edu.uw.zookeeper.data.ZNodePath;
 
 public abstract class ServerViewJmxQuery {
@@ -66,7 +66,7 @@ public abstract class ServerViewJmxQuery {
     
     public static ServerInetAddressView addressViewOf(MBeanServerConnection mbeans) throws IOException {
         for (Jmx.ServerSchema schema: Jmx.ServerSchema.values()) {
-            LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+            NameTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
             if (objectNames == null || objectNames.isEmpty()) {
                 continue;
             }
@@ -111,7 +111,7 @@ public abstract class ServerViewJmxQuery {
     
     public static EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleViewOf(MBeanServerConnection mbeans) throws IOException {
         Jmx.ServerSchema schema = Jmx.ServerSchema.REPLICATED_SERVER;
-        LabelTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
+        NameTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
         if (objectNames == null || objectNames.isEmpty()) {
             return null;
         }
