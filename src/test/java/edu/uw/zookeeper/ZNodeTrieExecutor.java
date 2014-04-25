@@ -12,7 +12,7 @@ import edu.uw.zookeeper.common.Processors;
 import edu.uw.zookeeper.common.Promise;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.NameTrie;
-import edu.uw.zookeeper.data.SimpleNameTrie;
+import edu.uw.zookeeper.data.SimpleLabelTrie;
 import edu.uw.zookeeper.data.TxnOperation;
 import edu.uw.zookeeper.data.ZNodeNode;
 import edu.uw.zookeeper.protocol.Message;
@@ -33,7 +33,7 @@ public class ZNodeTrieExecutor implements ClientExecutor<SessionOperation.Reques
 
     public static ZNodeTrieExecutor defaults() {
         return newInstance(
-                SimpleNameTrie.forRoot(ZNodeNode.root()),
+                SimpleLabelTrie.forRoot(ZNodeNode.root()),
                 ZxidIncrementer.fromZero(),
                 new StrongConcurrentSet<SessionListener>());
     }

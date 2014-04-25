@@ -10,7 +10,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.data.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.LockableZNodeCache;
+import edu.uw.zookeeper.data.ZNodeCache;
 import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;
@@ -35,11 +36,11 @@ public class RandomSingleClientTest {
         }
         monitor.startAsync().awaitRunning();
         
-        ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Operation.Request, Message.ServerResponse<?>> cache = 
-                ZNodeCacheTrie.newInstance( 
+        LockableZNodeCache<ZNodeCache.SimpleCacheNode, Operation.Request, Message.ServerResponse<?>> cache = 
+                LockableZNodeCache.newInstance( 
                         client.getClientBuilder().getConnectionClientExecutor());
         int iterations = 100;
-        Generator<Records.Request> requests = BasicRequestGenerator.create(cache);
+        Generator<Records.Request> requests = BasicRequestGenerator.fromCache(cache);
         ListAccumulator<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> accumulator = ListAccumulator.create(
                 SubmitCallable.create(requests, cache),
                 Lists.<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>>newArrayListWithCapacity(iterations)); 

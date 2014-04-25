@@ -14,7 +14,8 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.uw.zookeeper.client.SessionClientExecutor;
-import edu.uw.zookeeper.data.ZNodeCacheTrie;
+import edu.uw.zookeeper.data.LockableZNodeCache;
+import edu.uw.zookeeper.data.ZNodeCache;
 import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.IterationCallable;
@@ -34,10 +35,10 @@ public class ZNodeTrieTest {
     @Test //(timeout=10000)
     public void testRandom() throws Exception {
         ZNodeTrieExecutor executor = ZNodeTrieExecutor.defaults();
-        ZNodeCacheTrie<ZNodeCacheTrie.SimpleCachedNode, Records.Request, Message.ServerResponse<?>> cache = 
-                ZNodeCacheTrie.newInstance(SessionClientExecutor.create(1, executor));
+        LockableZNodeCache<ZNodeCache.SimpleCacheNode, Records.Request, Message.ServerResponse<?>> cache = 
+                LockableZNodeCache.newInstance(SessionClientExecutor.create(1, executor));
         int iterations = 100;
-        Generator<Records.Request> requests = BasicRequestGenerator.create(cache);
+        Generator<Records.Request> requests = BasicRequestGenerator.fromCache(cache);
         ListAccumulator<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> accumulator = ListAccumulator.create(
                 SubmitCallable.create(requests, cache),
                 Lists.<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>>newArrayListWithCapacity(iterations)); 

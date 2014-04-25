@@ -134,9 +134,10 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     
     protected SimpleServerBuilder<?> getDefaultServerBuilder() {
         ServerInetAddressView address = ServerInetAddressView.of((InetSocketAddress) netModule.factory().addresses().get());
+        SimpleServerConnectionsBuilder connections = SimpleServerConnectionsBuilder.defaults(address, netModule);
         return new SimpleServerBuilder<SimpleServerExecutor.Builder>(
-                SimpleServerExecutor.builder(),
-                SimpleServerConnectionsBuilder.defaults(address, netModule)).setRuntimeModule(runtime);
+                SimpleServerExecutor.builder(connections.getConnectionBuilder()),
+                connections).setRuntimeModule(runtime);
     }
     
     protected SimpleClientBuilder getDefaultClientBuilder() {

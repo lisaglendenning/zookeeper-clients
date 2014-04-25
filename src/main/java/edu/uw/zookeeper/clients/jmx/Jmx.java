@@ -25,7 +25,7 @@ import edu.uw.zookeeper.common.DefaultsFactory;
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.data.DefaultsNode;
 import edu.uw.zookeeper.data.RelativeZNodePath;
-import edu.uw.zookeeper.data.SimpleNameTrie;
+import edu.uw.zookeeper.data.SimpleLabelTrie;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.data.NameTrie;
 import edu.uw.zookeeper.data.ZNodeLabelVector;
@@ -180,17 +180,17 @@ public abstract class Jmx {
     public static class JmxSchemaNode extends DefaultsNode.AbstractDefaultsNode<JmxSchemaNode> {
 
         public static JmxSchemaNode root() {
-            return new JmxSchemaNode(SimpleNameTrie.<JmxSchemaNode>rootPointer());
+            return new JmxSchemaNode(SimpleLabelTrie.<JmxSchemaNode>rootPointer());
         }
         
         protected JmxSchemaNode(
                 NameTrie.Pointer<? extends JmxSchemaNode> parent) {
-            super(SimpleNameTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxSchemaNode>newHashMap());
+            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxSchemaNode>newHashMap());
         }
 
         @Override
         protected JmxSchemaNode newChild(ZNodeName name) {
-            return new JmxSchemaNode(SimpleNameTrie.weakPointer(name, this));
+            return new JmxSchemaNode(SimpleLabelTrie.weakPointer(name, this));
         }
     }
     
@@ -199,7 +199,7 @@ public abstract class Jmx {
         public static JmxBeanNode root() {
             return new JmxBeanNode(
                     ImmutableSet.<ObjectName>of(),
-                    SimpleNameTrie.<JmxBeanNode>rootPointer());
+                    SimpleLabelTrie.<JmxBeanNode>rootPointer());
         }
 
         public static JmxBeanNode child(
@@ -216,7 +216,7 @@ public abstract class Jmx {
                 JmxBeanNode parent) {
             return new JmxBeanNode(
                     ImmutableSet.copyOf(names),
-                    SimpleNameTrie.<JmxBeanNode>weakPointer(label, parent));
+                    SimpleLabelTrie.<JmxBeanNode>weakPointer(label, parent));
         }
         
         protected volatile ImmutableSet<ObjectName> names;
@@ -224,7 +224,7 @@ public abstract class Jmx {
         protected JmxBeanNode(
                 ImmutableSet<ObjectName> names,
                 NameTrie.Pointer<? extends JmxBeanNode> parent) {
-            super(SimpleNameTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxBeanNode>newHashMap());
+            super(SimpleLabelTrie.pathOf(parent), parent, Maps.<ZNodeName, JmxBeanNode>newHashMap());
             this.names = names;
         }
         
@@ -260,7 +260,7 @@ public abstract class Jmx {
         private final NameTrie<JmxSchemaNode> trie;
         
         private ServerSchema(Key rootKey) {
-            this.trie = SimpleNameTrie.forRoot(JmxSchemaNode.root());
+            this.trie = SimpleLabelTrie.forRoot(JmxSchemaNode.root());
             JmxSchemaNode root = this.trie.root().putIfAbsent(rootKey.label());
             
             switch (rootKey) {
@@ -304,7 +304,7 @@ public abstract class Jmx {
         }
         
         public NameTrie<JmxBeanNode> instantiate(MBeanServerConnection mbeans) throws IOException {
-            NameTrie<JmxBeanNode> instance = SimpleNameTrie.forRoot(JmxBeanNode.root());
+            NameTrie<JmxBeanNode> instance = SimpleLabelTrie.forRoot(JmxBeanNode.root());
             for (JmxSchemaNode n: asTrie()) {
                 ZNodePath path = n.path();
                 if (path.isRoot()) {
