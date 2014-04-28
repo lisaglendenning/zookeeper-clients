@@ -14,16 +14,16 @@ import edu.uw.zookeeper.protocol.proto.OpCode;
 import edu.uw.zookeeper.protocol.proto.Records;
 import edu.uw.zookeeper.protocol.proto.Stats;
 
-public class BasicRequestGenerator implements Generator<Records.Request> {
+public class RandomRequestGenerator implements Generator<Records.Request> {
 
-    public static BasicRequestGenerator create(
+    public static RandomRequestGenerator defaults(
             ZNodeViewCache<?,?,?> cache) {
         Random random = new Random();
         RandomLabel labels = RandomLabel.create(random, 1, 9);
         RandomData datum = RandomData.create(random, 0, 1024);
         CachedPaths paths = CachedPaths.create(cache, random);
-        ImmutableRandomFromList<OpCode> opcodes = ImmutableRandomFromList.create(random, BASIC_OPCODES);
-        return new BasicRequestGenerator(
+        RandomFromList<OpCode> opcodes = RandomFromList.create(random, BASIC_OPCODES);
+        return new RandomRequestGenerator(
                 random, opcodes, paths, labels, datum, cache);
     }
     
@@ -43,7 +43,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
     protected final Generator<ZNodeLabel.Component> labels;
     protected final Generator<byte[]> datum;
 
-    public BasicRequestGenerator(
+    protected RandomRequestGenerator(
             Random random, 
             Generator<OpCode> opcodes,
             Generator<ZNodeLabel.Path> paths,

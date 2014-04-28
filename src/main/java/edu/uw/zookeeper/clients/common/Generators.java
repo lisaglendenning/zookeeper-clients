@@ -2,27 +2,25 @@ package edu.uw.zookeeper.clients.common;
 
 import java.util.Iterator;
 
-import com.google.common.collect.Iterators;
-
 
 
 public abstract class Generators {
     
     public static <V> ConstantGenerator<V> constant(V value) {
-        return new ConstantGenerator<V>(value);
+        return ConstantGenerator.forValue(value);
     }
 
-    public static <V> IteratorGenerator<V> cycle(Iterable<V> elements) {
-        return IteratorGenerator.of(Iterators.cycle(elements));
+    public static <V> IteratorGenerator<V> iterator(Iterator<V> values) {
+        return IteratorGenerator.forIterator(values);
     }
 
-    public static <V> IteratorGenerator<V> cycle(V... elements) {
-        return IteratorGenerator.of(Iterators.cycle(elements));
+    public static <V> DereferencingGenerator<V> dereferencing(Generator<? extends Generator<? extends V>> generator) {
+        return DereferencingGenerator.forGenerator(generator);
     }
-    
+
     public static class ConstantGenerator<V> implements Generator<V> {
 
-        public static <V> ConstantGenerator<V> of(V value) {
+        public static <V> ConstantGenerator<V> forValue(V value) {
             return new ConstantGenerator<V>(value);
         }
         
@@ -37,22 +35,40 @@ public abstract class Generators {
             return value;
         }
     }
+    
+    public static class DereferencingGenerator<V> implements Generator<V> {
 
-    public static class IteratorGenerator<V> implements Generator<V> {
-
-        public static <V> IteratorGenerator<V> of(Iterator<V> value) {
-            return new IteratorGenerator<V>(value);
+        public static <V> DereferencingGenerator<V> forGenerator(Generator<? extends Generator<? extends V>> generator) {
+            return new DereferencingGenerator<V>(generator);
         }
         
-        private final Iterator<V> itr;
-
-        protected IteratorGenerator(Iterator<V> itr) {
-            this.itr = itr;
+        private final Generator<? extends Generator<? extends V>> generator;
+        
+        public DereferencingGenerator(Generator<? extends Generator<? extends V>> generator) {
+            this.generator = generator;
         }
         
         @Override
         public V next() {
-            return itr.next();
+            return generator.next().next();
+        }
+    }
+
+    public static class IteratorGenerator<V> implements Generator<V> {
+
+        public static <V> IteratorGenerator<V> forIterator(Iterator<V> values) {
+            return new IteratorGenerator<V>(values);
+        }
+        
+        private final Iterator<V> values;
+
+        protected IteratorGenerator(Iterator<V> values) {
+            this.values = values;
+        }
+        
+        @Override
+        public V next() {
+            return values.next();
         }
     }
     

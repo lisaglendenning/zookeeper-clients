@@ -1,17 +1,16 @@
 package edu.uw.zookeeper.clients.trace;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
-import edu.uw.zookeeper.clients.common.CallUntilPresent;
 import edu.uw.zookeeper.clients.common.Generator;
-import edu.uw.zookeeper.clients.common.IterationCallable;
-import edu.uw.zookeeper.clients.common.SubmitCallable;
-import edu.uw.zookeeper.common.Pair;
+import edu.uw.zookeeper.clients.common.CountingGenerator;
+import edu.uw.zookeeper.clients.common.SubmitGenerator;
+import edu.uw.zookeeper.common.LoggingPromise;
 import edu.uw.zookeeper.common.RuntimeModule;
-import edu.uw.zookeeper.protocol.Message;
+import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public abstract class TraceGeneratingClientBuilder<C extends TraceGeneratingClientBuilder<C>> extends TraceWritingClientBuilder<C> {
@@ -27,21 +26,28 @@ public abstract class TraceGeneratingClientBuilder<C extends TraceGeneratingClie
 
     @Override
     protected Runnable getDefaultRunnable() {
-        final CallUntilPresent<Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>>> callable = 
-                    CallUntilPresent.create(
-                        IterationCallable.create(getRuntimeModule().getConfiguration(), 
-                                SubmitCallable.create(getDefaultRequestGenerator(), getDefaultClientExecutor())));
+        final IteratingClient callable = IteratingClient.create(
+                getRuntimeModule().getExecutors().get(ExecutorService.class), 
+                CountingGenerator.fromConfiguration(
+                        getRuntimeModule().getConfiguration(), 
+                        SubmitGenerator.create(
+                                getDefaultRequestGenerator(), 
+                                getDefaultClientExecutor())),
+                LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));
         return new Runnable() {
             @Override
             public void run() {
+                getRuntimeModule().getExecutors().get(ExecutorService.class).execute(callable);
                 try {
-                    callable.call().second().get();
-                } catch (Exception e) {
-                    throw Throwables.propagate(e);
+                    callable.get();
+                } catch (InterruptedException e) {
+                    return;
+                } catch (ExecutionException e) {
+                    logger.error("", e.getCause());
                 }
             }
         };
     }
 
-    protected abstract Generator<Records.Request> getDefaultRequestGenerator();
+    protected abstract Generator<? extends Records.Request> getDefaultRequestGenerator();
 }

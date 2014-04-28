@@ -4,25 +4,34 @@ import java.util.List;
 import java.util.Random;
 
 import edu.uw.zookeeper.clients.common.Generator;
+import edu.uw.zookeeper.common.AbstractPair;
 
-public abstract class RandomFromList<E> implements Generator<E> {
+public class RandomFromList<E> extends AbstractPair<Random, List<E>> implements Generator<E> {
 
-    protected final Random random;
-    protected final List<E> elements;
+    public static <E> RandomFromList<E> create(Random random, List<E> elements) {
+        return new RandomFromList<E>(random, elements);
+    }
     
     protected RandomFromList(Random random, List<E> elements) {
-        this.random = random;
-        this.elements = elements;
+        super(random, elements);
+    }
+    
+    public Random getRandom() {
+        return first;
+    }
+    
+    public List<E> getElements() {
+        return second;
     }
 
     @Override
     public E next() {
-        int size = elements.size();
+        int size = getElements().size();
         if (size == 0) {
             return null;
         } else {
-            int index = (size > 1) ? random.nextInt(size) : 0;
-            return elements.get(index);
+            int index = (size > 1) ? getRandom().nextInt(size) : 0;
+            return getElements().get(index);
         }
     }
 }

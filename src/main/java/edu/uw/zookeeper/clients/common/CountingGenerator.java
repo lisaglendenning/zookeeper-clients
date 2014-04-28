@@ -2,13 +2,11 @@ package edu.uw.zookeeper.clients.common;
 
 import static com.google.common.base.Preconditions.*;
 
-import java.util.concurrent.Callable;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
+import com.google.common.collect.AbstractIterator;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.common.Configurable;
@@ -17,11 +15,11 @@ import edu.uw.zookeeper.common.Configuration;
 /**
  * Not thread-safe.
  */
-public class IterationCallable<V> implements Callable<Optional<V>> {
+public final class CountingGenerator<V> extends AbstractIterator<V> {
 
-    public static <V> IterationCallable<V> create(
+    public static <V> CountingGenerator<V> fromConfiguration(
             Configuration configuration,
-            Callable<V> callable) {
+            Generator<? extends V> callable) {
         int limit = ConfigurableIterations.get(configuration);
         int logIterations = ConfigurableLogIterations.get(configuration);
         int logInterval;
@@ -30,15 +28,17 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
         } else {
             logInterval = 0;
         }
-        return create(limit, logInterval, callable);
+        return create(limit, logInterval, callable, LogManager.getLogger(CountingGenerator.class));
     }
     
-    public static <V> IterationCallable<V> create(
+    public static <V> CountingGenerator<V> create(
             int limit,
             int logInterval,
-            Callable<V> callable) {
-        return new IterationCallable<V>(
-                limit, logInterval, callable, LogManager.getLogger(IterationCallable.class));
+            Generator<? extends V> callable,
+            Logger logger) {
+        checkArgument((limit >= 0) || (limit == INFINITE_ITERATIONS), limit);
+        return new CountingGenerator<V>(
+                limit, logInterval, callable, logger);
     }
 
     public static abstract class ConfigurableInt implements Function<Configuration, Integer> {
@@ -60,7 +60,7 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
         }
     }
     
-    @Configurable(key="logIterations", value="10", type=ConfigValueType.NUMBER)
+    @Configurable(arg="logIterations", key="logIterations", value="10", type=ConfigValueType.NUMBER)
     public static class ConfigurableLogIterations extends ConfigurableInt {
 
         public static Integer get(Configuration configuration) {
@@ -68,20 +68,19 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
         }
     }
     
-    protected static final int INFINITE_ITERATIONS = -1;
+    public static final int INFINITE_ITERATIONS = -1;
 
-    protected final Logger logger;
-    protected final int logInterval;
-    protected final int limit;
-    protected final Callable<V> callable;
-    protected int count;
+    private final Logger logger;
+    private final int logInterval;
+    private final int limit;
+    private final Generator<? extends V> callable;
+    private int count;
     
-    public IterationCallable(
+    protected CountingGenerator(
             int limit,
             int logInterval,
-            Callable<V> callable,
+            Generator<? extends V> callable,
             Logger logger) {
-        checkArgument((limit >= 0) || (limit == INFINITE_ITERATIONS), limit);
         this.logger = logger;
         this.logInterval = logInterval;
         this.limit = limit;
@@ -98,19 +97,14 @@ public class IterationCallable<V> implements Callable<Optional<V>> {
     }
     
     @Override
-    public Optional<V> call() throws Exception {
-        if ((limit >=0) && (count >= limit)) {
-            return Optional.absent();
+    protected V computeNext() {
+        if ((limit != INFINITE_ITERATIONS) && (count >= limit)) {
+            return endOfData();
         }
         this.count++;
         if ((logInterval != 0) && ((count == 1) || (count == limit) || (count % logInterval == 0))) {
             logger.info("Iteration {}", count);
         }
-        V result = callable.call();
-        if ((limit == INFINITE_ITERATIONS) || (count < limit)) {
-            return Optional.absent();
-        } else {
-            return Optional.of(result);
-        }
+        return callable.next();
     }
 }

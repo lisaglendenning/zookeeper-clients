@@ -12,12 +12,12 @@ import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
-import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.EventBusPublisher;
 import edu.uw.zookeeper.common.RuntimeModule;
+import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.protocol.proto.Records;
 
@@ -135,7 +135,8 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
     }
 
     @Override
-    protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(Generators.constant(ZNodeLabel.Path.root()));
+    protected Generator<? extends Records.Request> getDefaultRequestGenerator() {
+        return Generators.constant(
+                Operations.Requests.exists().setPath(ZNodeLabel.Path.root()).setWatch(false).build());
     }
 }

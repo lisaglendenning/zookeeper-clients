@@ -14,7 +14,7 @@ import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.client.TreeFetcher;
 import edu.uw.zookeeper.client.ZNodeViewCache;
 import edu.uw.zookeeper.clients.common.Generator;
-import edu.uw.zookeeper.clients.random.BasicRequestGenerator;
+import edu.uw.zookeeper.clients.random.RandomRequestGenerator;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.Message.ServerResponse;
@@ -124,6 +124,6 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
 
     @Override
     protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return BasicRequestGenerator.create(getCache());
+        return RandomRequestGenerator.defaults(getCache());
     }
 }
