@@ -47,7 +47,7 @@ public abstract class TraceWritingClientBuilder<C extends TraceWritingClientBuil
     public C setDefaults() {
         C builder = super.setDefaults();
         if (this == builder) {
-            if (clientBuilder == null) {
+            if (getClientBuilder() == null) {
                 return setClientBuilder(getDefaultClientBuilder()).setDefaults();
             }
         }
