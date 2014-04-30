@@ -16,7 +16,7 @@ public class RandomData implements Generator<byte[]> {
     protected final int minLength;
     protected final int lengthRange;
     
-    public RandomData(Random random, int minLength, int lengthRange) {
+    protected RandomData(Random random, int minLength, int lengthRange) {
         this.random = checkNotNull(random);
         checkArgument(minLength >= 0);
         checkArgument(lengthRange >= 0);

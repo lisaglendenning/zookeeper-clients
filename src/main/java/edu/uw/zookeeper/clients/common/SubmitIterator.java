@@ -32,7 +32,8 @@ public class SubmitIterator<I extends Operation.Request, O extends Operation.Pro
         if (requests.hasNext()) {
             I request = requests.next();
             return Pair.create(request, client.submit(request));
+        } else {
+            return endOfData();
         }
-        return endOfData();
     }
 }

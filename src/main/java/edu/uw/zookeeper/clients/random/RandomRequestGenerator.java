@@ -17,16 +17,16 @@ import edu.uw.zookeeper.protocol.proto.OpCode;
 import edu.uw.zookeeper.protocol.proto.Records;
 import edu.uw.zookeeper.protocol.proto.Stats;
 
-public class BasicRequestGenerator implements Generator<Records.Request> {
+public class RandomRequestGenerator implements Generator<Records.Request> {
 
-    public static BasicRequestGenerator fromCache(
+    public static RandomRequestGenerator fromCache(
             LockableZNodeCache<?,?,?> cache) {
         Random random = new Random();
         RandomLabel labels = RandomLabel.create(random, 1, 9);
         RandomData datum = RandomData.create(random, 0, 1024);
         CachedPaths paths = CachedPaths.fromCache(cache, random);
-        ImmutableRandomFromList<OpCode> opcodes = ImmutableRandomFromList.create(random, BASIC_OPCODES);
-        return new BasicRequestGenerator(
+        RandomFromList<OpCode> opcodes = RandomFromList.create(random, BASIC_OPCODES);
+        return new RandomRequestGenerator(
                 random, opcodes, paths, labels, datum, cache);
     }
     
@@ -46,7 +46,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
     protected final Generator<ZNodeLabel> labels;
     protected final Generator<byte[]> datum;
 
-    public BasicRequestGenerator(
+    protected RandomRequestGenerator(
             Random random, 
             Generator<OpCode> opcodes,
             Generator<ZNodePath> paths,
@@ -69,7 +69,7 @@ public class BasicRequestGenerator implements Generator<Records.Request> {
             ZNodePath path;
             ZNodeCache.CacheNode<?,?> node = null;
             do {
-                path = paths.next();
+                path = nextPath();
                 node = cache.cache().get(path);
             } while (node == null);
             

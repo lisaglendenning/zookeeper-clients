@@ -11,11 +11,9 @@ import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -26,21 +24,19 @@ import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.ConnectionClientExecutorsService;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
-import edu.uw.zookeeper.clients.common.IterationCallable;
+import edu.uw.zookeeper.clients.common.CountingGenerator;
 import edu.uw.zookeeper.clients.common.RunnableService;
-import edu.uw.zookeeper.clients.common.SubmitCallable;
-import edu.uw.zookeeper.clients.random.PathedRequestGenerator;
+import edu.uw.zookeeper.clients.common.SubmitGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.LoggingPromise;
 import edu.uw.zookeeper.common.Pair;
-import edu.uw.zookeeper.common.Promise;
-import edu.uw.zookeeper.common.PromiseTask;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.data.ZNodePath;
+import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.protocol.Operation;
 import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
 import edu.uw.zookeeper.protocol.client.ConnectionClientExecutor;
@@ -184,18 +180,19 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                 .setDefaults(); 
     }
     
-
-    protected Generator<Records.Request> getDefaultRequestGenerator() {
-        return PathedRequestGenerator.exists(Generators.constant(ZNodePath.root()));
+    protected Generator<? extends Records.Request> getDefaultRequestGenerator() {
+        return Generators.constant(
+                Operations.Requests.exists().setPath(ZNodePath.root()).setWatch(false).build());
     }
     
     protected Runnable getDefaultRunnable() {
         final int nclients = ConfigurableClients.get(getRuntimeModule().getConfiguration());
         final int outstanding = LimitOutstandingClient.ConfigurableLimit.get(getRuntimeModule().getConfiguration());
-        final int iterations = IterationCallable.ConfigurableIterations.get(getRuntimeModule().getConfiguration());
+        final int iterations = CountingGenerator.ConfigurableIterations.get(getRuntimeModule().getConfiguration());
         final int logInterval = 0;
-        final Generator<Records.Request> generator = getDefaultRequestGenerator();
+        final Generator<? extends Records.Request> generator = getDefaultRequestGenerator();
         final ListeningExecutorService executor = getRuntimeModule().getExecutors().get(ListeningExecutorService.class);
+        final Logger logger = LogManager.getLogger(IteratingClient.class);
         return new Runnable() {
             @Override
             public void run() {
@@ -205,14 +202,17 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                         executors.add(connectionBuilder.getConnectionClientExecutors().get().get());
                     }
                     
-                    List<Client> clients = Lists.newArrayListWithCapacity(executors.size());
-                    for (ConnectionClientExecutor<Operation.Request,?,?,?> e: executors) {
-                        IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task = IterationCallable.create(
-                                iterations, logInterval,
-                                SubmitCallable.create(
+                    List<IteratingClient> clients = Lists.newArrayListWithCapacity(executors.size());
+                    for (ConnectionClientExecutor<Operation.Request, ?, ?, ?> e: executors) {
+                        CountingGenerator<? extends Pair<? extends Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task = 
+                                CountingGenerator.create(
+                                iterations, 
+                                logInterval,
+                                SubmitGenerator.create(
                                         generator, 
-                                        LimitOutstandingClient.create(outstanding, e)));
-                        Client client = new Client(
+                                        LimitOutstandingClient.create(outstanding, e)),
+                                logger);
+                        IteratingClient client = new IteratingClient(
                                 executor, 
                                 task, 
                                 LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));
@@ -220,9 +220,9 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                     }
                     
                     List<ListenableFuture<?>> futures = Lists.newArrayListWithCapacity(clients.size());
-                    for (Client e: clients) {
-                        e.run();
+                    for (IteratingClient e: clients) {
                         futures.add(e);
+                        executor.execute(e);
                     }
                     
                     Futures.allAsList(futures).get();
@@ -231,43 +231,5 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                 }
             }
         };
-    }
-    
-    protected static class Client extends PromiseTask<IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>>, Void> implements Runnable, FutureCallback<Object> {
-        
-        protected final ListeningExecutorService executor;
-        
-        public Client(
-                ListeningExecutorService executor,
-                IterationCallable<? extends Pair<Records.Request, ? extends ListenableFuture<? extends Operation.ProtocolResponse<?>>>> task,
-                Promise<Void> promise) {
-            super(task, promise);
-            this.executor = executor;
-        }
-        
-        @Override
-        public void run() {
-            if (! isDone()) {
-                Futures.addCallback(executor.submit(task()), this, executor);
-            }
-        }
-
-        @Override
-        public void onSuccess(Object result) {
-            if (result instanceof Optional) {
-                if (((Optional<?>) result).isPresent()) {
-                    Futures.addCallback((ListenableFuture<?>) ((Pair<?,?>) ((Optional<?>) result).get()).second(), this, executor);
-                } else {
-                    run();
-                }
-            } else {
-                set(null);
-            }
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            setException(t);
-        }
     }
 }
