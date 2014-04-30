@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -18,11 +16,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Service;
 import com.typesafe.config.ConfigValueType;
 
-import edu.uw.zookeeper.EnsembleView;
-import edu.uw.zookeeper.ServerInetAddressView;
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
-import edu.uw.zookeeper.client.EnsembleViewFactory;
-import edu.uw.zookeeper.client.ServerViewFactory;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
 import edu.uw.zookeeper.clients.common.SubmitIterator;
@@ -32,7 +26,6 @@ import edu.uw.zookeeper.clients.random.RandomData;
 import edu.uw.zookeeper.clients.random.RandomFromList;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
-import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.LoggingPromise;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.RuntimeModule;
@@ -44,13 +37,7 @@ import edu.uw.zookeeper.data.ZNodeLabel;
 import edu.uw.zookeeper.data.ZNodeLabelVector;
 import edu.uw.zookeeper.data.ZNodeName;
 import edu.uw.zookeeper.data.ZNodePath;
-import edu.uw.zookeeper.net.ClientConnectionFactory;
 import edu.uw.zookeeper.protocol.Message;
-import edu.uw.zookeeper.protocol.Operation;
-import edu.uw.zookeeper.protocol.ProtocolConnection;
-import edu.uw.zookeeper.protocol.Session;
-import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
-import edu.uw.zookeeper.protocol.client.OperationClientExecutor;
 import edu.uw.zookeeper.protocol.proto.Records;
 
 public class GetSetClientBuilder extends MeasuringClientBuilder {
@@ -291,13 +278,12 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
 
     @Override
     protected Runnable getDefaultRunnable() {
-        // this is a hack, but we're doing it this way because we
+        // this is hacky, but we're doing it this way because we
         // don't want the tree creation operations to go through
         // the tracing layer
         final Runnable delegate = super.getDefaultRunnable();
         final ConnectionClientExecutorService.Builder untraced = 
-                ConnectionClientExecutorServiceBuilder.defaults()
-                .setEnsemble(((ConnectionClientExecutorServiceBuilder) getClientBuilder()).getEnsemble())
+                ConnectionClientExecutorService.builder()
                 .setConnectionBuilder(
                         getClientBuilder().getConnectionBuilder().setCodecFactory(null).setDefaults())
                 .setRuntimeModule(getRuntimeModule())
@@ -357,21 +343,6 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
                                             Float.valueOf(1.0f - getPercentage.floatValue()), 
                                             SetDataGenerator.forData(RandomData.create(getRandom(), 0, (int) (dataMaxMB.floatValue() * Math.pow(2, 20)))))))));
     }
-
-    @Override
-    protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
-        return ConnectionClientExecutorServiceBuilder.defaults()
-                .setConnectionBuilder(ClientConnectionFactoryBuilder.defaults()
-                        .setCodecFactory(
-                                new Factory<OperationTracingCodec>() {
-                                    @Override
-                                    public OperationTracingCodec get() {
-                                        return OperationTracingCodec.defaults(getTracePublisher().getPublisher());
-                                    }
-                                }))
-                .setRuntimeModule(getRuntimeModule())
-                .setDefaults();
-    }
     
     protected Random getDefaultRandom() {
         return new Random();
@@ -380,74 +351,5 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
     protected PerfectTreeParameters getDefaultParameters() {
         final Configuration configuration = getRuntimeModule().getConfiguration();
         return PerfectTreeParameters.fromConfiguration(configuration);
-    }
-    
-    // Hack to avoid configuration error
-    protected static class ConnectionClientExecutorServiceBuilder extends
-            ConnectionClientExecutorService.Builder {
-        
-        public static ConnectionClientExecutorServiceBuilder defaults() {
-            return new ConnectionClientExecutorServiceBuilder(null, null, null, null, null);
-        }
-        
-        protected final EnsembleView<ServerInetAddressView> ensemble;
-        
-        protected ConnectionClientExecutorServiceBuilder(
-                EnsembleView<ServerInetAddressView> ensemble,
-                ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
-                ConnectionClientExecutorService<Operation.Request, Message.ServerResponse<?>> clientExecutor,
-                RuntimeModule runtime) {
-            super(connectionBuilder, clientConnectionFactory, clientExecutor, runtime);
-            this.ensemble = ensemble;
-        }
-        
-        public EnsembleView<ServerInetAddressView> getEnsemble() {
-            return ensemble;
-        }
-        
-        public ConnectionClientExecutorServiceBuilder setEnsemble(EnsembleView<ServerInetAddressView> ensemble) {
-            return newInstance(ensemble, connectionBuilder, clientConnectionFactory, clientExecutor, runtime);
-        }
-
-        @Override
-        public ConnectionClientExecutorServiceBuilder setDefaults() {
-            if (getEnsemble() == null) {
-                return setEnsemble(getDefaultEnsemble()).setDefaults();
-            }
-            return (ConnectionClientExecutorServiceBuilder) super.setDefaults();
-        }
-        
-        @Override
-        protected ConnectionClientExecutorServiceBuilder newInstance(
-                ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
-                ConnectionClientExecutorService<Operation.Request, Message.ServerResponse<?>> clientExecutor,
-                RuntimeModule runtime) {
-            return newInstance(ensemble, connectionBuilder, clientConnectionFactory, clientExecutor, runtime);
-        }
-
-        protected ConnectionClientExecutorServiceBuilder newInstance(
-                EnsembleView<ServerInetAddressView> ensemble,
-                ClientConnectionFactoryBuilder connectionBuilder,
-                ClientConnectionFactory<? extends ProtocolConnection<Message.ClientSession, Message.ServerSession,?,?,?>> clientConnectionFactory,
-                ConnectionClientExecutorService<Operation.Request, Message.ServerResponse<?>> clientExecutor,
-                RuntimeModule runtime) {
-            return new ConnectionClientExecutorServiceBuilder(ensemble, connectionBuilder, clientConnectionFactory, clientExecutor, runtime);
-        }
-
-        @Override
-        protected ConnectionClientExecutorService<Operation.Request, Message.ServerResponse<?>> getDefaultConnectionClientExecutorService() {
-            EnsembleViewFactory<? extends ServerViewFactory<Session, ? extends OperationClientExecutor<?>>> ensembleFactory = 
-                    EnsembleViewFactory.fromSession(
-                        getClientConnectionFactory(),
-                        getEnsemble(), 
-                        getConnectionBuilder().getTimeOut(),
-                        getRuntimeModule().getExecutors().get(ScheduledExecutorService.class));
-            ConnectionClientExecutorService<Operation.Request, Message.ServerResponse<?>> service =
-                    ConnectionClientExecutorService.newInstance(
-                            ensembleFactory);
-            return service;
-        }
     }
 }
