@@ -22,11 +22,12 @@ import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.client.LimitOutstandingClient;
 import edu.uw.zookeeper.clients.ConnectionClientExecutorsService;
+import edu.uw.zookeeper.clients.IteratingClient;
+import edu.uw.zookeeper.clients.SubmitGenerator;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
 import edu.uw.zookeeper.clients.common.CountingGenerator;
 import edu.uw.zookeeper.clients.common.RunnableService;
-import edu.uw.zookeeper.clients.common.SubmitGenerator;
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
@@ -212,7 +213,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                                         generator, 
                                         LimitOutstandingClient.create(outstanding, e)),
                                 logger);
-                        IteratingClient client = new IteratingClient(
+                        IteratingClient client = IteratingClient.create(
                                 executor, 
                                 task, 
                                 LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));

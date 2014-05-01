@@ -13,9 +13,9 @@ import com.google.common.util.concurrent.Service;
 
 import edu.uw.zookeeper.data.LockableZNodeCache;
 import edu.uw.zookeeper.data.ZNodeCache;
+import edu.uw.zookeeper.clients.SubmitGenerator;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.CountingGenerator;
-import edu.uw.zookeeper.clients.common.SubmitGenerator;
 import edu.uw.zookeeper.clients.random.RandomRequestGenerator;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.ServiceMonitor;

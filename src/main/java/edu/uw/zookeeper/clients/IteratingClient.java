@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients.trace;
+package edu.uw.zookeeper.clients;
 
 import java.util.Iterator;
 import java.util.Set;

@@ -12,7 +12,7 @@ import com.sun.xml.internal.xsom.impl.scd.Iterators;
 
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
-import edu.uw.zookeeper.clients.common.SubmitIterator;
+import edu.uw.zookeeper.clients.SubmitIterator;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.protocol.Message;

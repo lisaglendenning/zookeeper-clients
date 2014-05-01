@@ -1,4 +1,4 @@
-package edu.uw.zookeeper.clients.common;
+package edu.uw.zookeeper.clients;
 
 import java.util.Iterator;
 

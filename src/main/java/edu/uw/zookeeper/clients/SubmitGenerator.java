@@ -1,8 +1,9 @@
-package edu.uw.zookeeper.clients.common;
+package edu.uw.zookeeper.clients;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import edu.uw.zookeeper.client.ClientExecutor;
+import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.common.AbstractPair;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.protocol.Operation;

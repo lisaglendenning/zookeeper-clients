@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -17,9 +18,10 @@ import com.google.common.util.concurrent.Service;
 import com.typesafe.config.ConfigValueType;
 
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
+import edu.uw.zookeeper.clients.IteratingClient;
+import edu.uw.zookeeper.clients.SubmitIterator;
 import edu.uw.zookeeper.clients.common.Generator;
 import edu.uw.zookeeper.clients.common.Generators;
-import edu.uw.zookeeper.clients.common.SubmitIterator;
 import edu.uw.zookeeper.clients.random.BinGenerator;
 import edu.uw.zookeeper.clients.random.PathRequestGenerator;
 import edu.uw.zookeeper.clients.random.RandomData;
