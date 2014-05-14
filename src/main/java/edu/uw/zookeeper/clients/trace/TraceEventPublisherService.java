@@ -1,6 +1,6 @@
 package edu.uw.zookeeper.clients.trace;
 
-import net.engio.mbassy.bus.PubSubSupport;
+import net.engio.mbassy.bus.common.PubSubSupport;
 import net.engio.mbassy.listener.Handler;
 
 import com.google.common.util.concurrent.AbstractIdleService;

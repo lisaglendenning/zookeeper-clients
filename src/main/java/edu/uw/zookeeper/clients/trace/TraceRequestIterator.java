@@ -29,10 +29,10 @@ public abstract class TraceRequestIterator {
     public static UnmodifiableIterator<ProtocolRequestEvent> forFirstSession(
             Iterator<ProtocolRequestEvent> requests) {
         return Iterators.filter(requests, new Predicate<ProtocolRequestEvent>() {
-            long sessionId = Session.UNINITIALIZED_ID;
+            long sessionId = Session.uninitialized().id();
             @Override
             public boolean apply(ProtocolRequestEvent input) {
-                if (sessionId == Session.UNINITIALIZED_ID) {
+                if (sessionId == Session.uninitialized().id()) {
                     sessionId = input.getSessionId();
                 }
                 return (input.getSessionId() == sessionId);

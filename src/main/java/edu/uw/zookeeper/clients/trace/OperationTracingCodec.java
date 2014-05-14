@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Queue;
 
-import net.engio.mbassy.bus.PubSubSupport;
+import net.engio.mbassy.bus.common.PubSubSupport;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
@@ -51,7 +51,7 @@ public class OperationTracingCodec extends ForwardingProtocolCodec<Message.Clien
         this.times = times;
         this.publisher = publisher;
         this.delegate = delegate;
-        this.sessionId = Session.UNINITIALIZED_ID;
+        this.sessionId = Session.uninitialized().id();
         
         delegate.subscribe(this);
     }

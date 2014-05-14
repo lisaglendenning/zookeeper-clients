@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
-import net.engio.mbassy.bus.PubSubSupport;
+import net.engio.mbassy.bus.common.PubSubSupport;
 
 import com.google.common.base.Optional;
 
@@ -39,13 +39,13 @@ public class ProtocolTracingCodec extends ForwardingProtocolCodec<Message.Client
             ProtocolCodec<Message.ClientSession, Message.ServerSession, Message.ClientSession, Message.ServerSession> delegate) {
         this.delegate = delegate;
         this.publisher = publisher;
-        this.sessionId = Session.UNINITIALIZED_ID;
+        this.sessionId = Session.uninitialized().id();
     }
 
     @Override
     public void encode(Message.ClientSession message, ByteBuf output) throws IOException {
         delegate.encode(message, output);
-        if (sessionId != Session.UNINITIALIZED_ID) {
+        if (sessionId != Session.uninitialized().id()) {
             Message.ClientRequest<?> request = (Message.ClientRequest<?>) message;
             switch (request.record().opcode()) {
                 case PING:
@@ -71,7 +71,7 @@ public class ProtocolTracingCodec extends ForwardingProtocolCodec<Message.Client
             throws IOException {
         Optional<? extends Message.ServerSession> output = delegate.decode(input);
         if (output.isPresent()) {
-            if (sessionId == Session.UNINITIALIZED_ID) {
+            if (sessionId == Session.uninitialized().id()) {
                 ConnectMessage.Response response = (ConnectMessage.Response) output.get();
                 sessionId = response.getSessionId();
             } else {
