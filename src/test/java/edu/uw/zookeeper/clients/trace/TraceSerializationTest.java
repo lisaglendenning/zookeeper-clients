@@ -15,8 +15,8 @@ import org.junit.runners.JUnit4;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.MoreExecutors;
 
+import edu.uw.zookeeper.common.SameThreadExecutor;
 import edu.uw.zookeeper.data.Operations;
 import edu.uw.zookeeper.protocol.Message;
 import edu.uw.zookeeper.protocol.ProtocolRequestMessage;
@@ -46,7 +46,7 @@ public class TraceSerializationTest {
         StringWriter w = new StringWriter();
         JsonGenerator generator = mapper.getFactory().createGenerator(w);
         TraceHeader header = TraceHeader.create(ImmutableMap.<String, Object>of(), TraceEventTag.TIMESTAMP_EVENT);
-        TraceWriter writer = TraceWriter.create(generator, mapper.writer(), header, MoreExecutors.sameThreadExecutor());
+        TraceWriter writer = TraceWriter.create(generator, mapper.writer(), header, SameThreadExecutor.getInstance());
         int n = 10;
         for (int i=0; i<n; ++i) {
             writer.send(TimestampEvent.create(i));
