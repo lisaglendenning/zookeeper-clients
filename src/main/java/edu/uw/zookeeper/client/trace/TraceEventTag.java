@@ -1,0 +1,11 @@
+package edu.uw.zookeeper.client.trace;
+
+public enum TraceEventTag {
+    NO_EVENT,
+    TIMESTAMP_EVENT,
+    PROTOCOL_REQUEST_EVENT,
+    PROTOCOL_RESPONSE_EVENT,
+    OPERATION_EVENT,
+    LATENCY_MEASUREMENT_EVENT,
+    THROUGHPUT_MEASUREMENT_EVENT;
+}

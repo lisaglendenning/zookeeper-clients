@@ -163,6 +163,11 @@
 			<artifactId>zkclient</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>testing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>zklite-jackson</artifactId>
@@ -175,33 +180,6 @@
 			<version>1.6</version>
 			<scope>system</scope>
 			<systemPath>${java.tools.path}</systemPath>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>zkserver</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>zkcore</artifactId>
-			<version>${project.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>zkclient</artifactId>
-			<version>${project.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>zkserver</artifactId>
-			<version>${project.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
 		</dependency>
 		<!-- <dependency> <groupId>org.uncommons.maths</groupId> <artifactId>uncommons-maths</artifactId> 
 			<version>1.2.3</version> <scope>test</scope> </dependency> -->
