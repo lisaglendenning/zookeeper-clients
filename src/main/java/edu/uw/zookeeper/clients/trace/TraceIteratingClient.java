@@ -39,7 +39,7 @@ public class TraceIteratingClient extends ZooKeeperApplication.ForwardingApplica
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new TraceIteratingClient(ServiceApplication.newInstance(monitor));
+            return new TraceIteratingClient(ServiceApplication.forService(monitor));
         }
     }
 }

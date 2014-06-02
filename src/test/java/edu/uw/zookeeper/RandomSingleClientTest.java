@@ -2,6 +2,8 @@ package edu.uw.zookeeper;
 
 import static org.junit.Assert.assertFalse;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -47,7 +49,7 @@ public class RandomSingleClientTest {
                         SubmitGenerator.create(requests, cache), logger);
         while (operations.hasNext()) {
              Pair<Records.Request, ListenableFuture<Message.ServerResponse<?>>> operation = operations.next();
-             assertFalse(operation.second().get().record() instanceof Operation.Error);
+             assertFalse(operation.second().get(1000, TimeUnit.MILLISECONDS).record() instanceof Operation.Error);
         }
         monitor.stopAsync().awaitTerminated();
     }

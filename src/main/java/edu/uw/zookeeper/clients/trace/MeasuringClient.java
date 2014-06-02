@@ -39,7 +39,7 @@ public class MeasuringClient extends ZooKeeperApplication.ForwardingApplication 
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new MeasuringClient(ServiceApplication.newInstance(monitor));
+            return new MeasuringClient(ServiceApplication.forService(monitor));
         }
     }
 }

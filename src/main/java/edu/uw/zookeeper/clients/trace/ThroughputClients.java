@@ -39,7 +39,7 @@ public class ThroughputClients extends ZooKeeperApplication.ForwardingApplicatio
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new ThroughputClients(ServiceApplication.newInstance(monitor));
+            return new ThroughputClients(ServiceApplication.forService(monitor));
         }
     }
 }

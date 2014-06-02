@@ -39,7 +39,7 @@ public class GetSetClient extends ZooKeeperApplication.ForwardingApplication {
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new GetSetClient(ServiceApplication.newInstance(monitor));
+            return new GetSetClient(ServiceApplication.forService(monitor));
         }
     }
 }

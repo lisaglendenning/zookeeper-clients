@@ -6,12 +6,15 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Service;
 
-import edu.uw.zookeeper.client.SimpleClientBuilder;
+import edu.uw.zookeeper.client.ConnectionClientExecutorService;
+import edu.uw.zookeeper.client.EnsembleViewConfiguration;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.net.intravm.IntraVmNetModule;
+import edu.uw.zookeeper.protocol.client.ClientConnectionFactoryBuilder;
+import edu.uw.zookeeper.protocol.server.ServerConnectionFactoryBuilder;
+import edu.uw.zookeeper.protocol.server.ServerConnectionsHandler;
+import edu.uw.zookeeper.server.ClientAddressConfiguration;
 import edu.uw.zookeeper.server.SimpleServerBuilder;
-import edu.uw.zookeeper.server.SimpleServerConnectionsBuilder;
-import edu.uw.zookeeper.server.SimpleServerExecutor;
 
 public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilder<List<Service>, SimpleServerAndClient> {
 
@@ -22,7 +25,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     protected final RuntimeModule runtime;
     protected final IntraVmNetModule netModule;
     protected final SimpleServerBuilder<?> serverBuilder;
-    protected final SimpleClientBuilder clientBuilder;
+    protected final ConnectionClientExecutorService.Builder clientBuilder;
 
     protected SimpleServerAndClient() {
         this(null, null, null, null);
@@ -31,7 +34,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     protected SimpleServerAndClient(
             IntraVmNetModule netModule,
             SimpleServerBuilder<?> server,
-            SimpleClientBuilder client,
+            ConnectionClientExecutorService.Builder client,
             RuntimeModule runtime) {
         this.netModule = netModule;
         this.serverBuilder = server;
@@ -82,11 +85,11 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
         }
     }
 
-    public SimpleClientBuilder getClientBuilder() {
+    public ConnectionClientExecutorService.Builder getClientBuilder() {
         return clientBuilder;
     }
     
-    public SimpleServerAndClient setClientBuilder(SimpleClientBuilder clientBuilder) {
+    public SimpleServerAndClient setClientBuilder(ConnectionClientExecutorService.Builder clientBuilder) {
         if (this.clientBuilder == clientBuilder) {
             return this;
         } else {
@@ -119,7 +122,7 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     protected SimpleServerAndClient newInstance(
             IntraVmNetModule netModule,
             SimpleServerBuilder<?> serverBuilder,
-            SimpleClientBuilder clientBuilder,
+            ConnectionClientExecutorService.Builder clientBuilder,
             RuntimeModule runtime) {
         return new SimpleServerAndClient(netModule, serverBuilder, clientBuilder, runtime);
     }
@@ -133,16 +136,15 @@ public class SimpleServerAndClient implements ZooKeeperApplication.RuntimeBuilde
     }
     
     protected SimpleServerBuilder<?> getDefaultServerBuilder() {
-        ServerInetAddressView address = ServerInetAddressView.of((InetSocketAddress) netModule.factory().addresses().get());
-        SimpleServerConnectionsBuilder connections = SimpleServerConnectionsBuilder.defaults(address, netModule);
-        return new SimpleServerBuilder<SimpleServerExecutor.Builder>(
-                SimpleServerExecutor.builder(connections.getConnectionBuilder()),
-                connections).setRuntimeModule(runtime);
+        ServerInetAddressView address = ServerInetAddressView.of((InetSocketAddress) getNetModule().factory().addresses().get());
+        ClientAddressConfiguration.set(getRuntimeModule().getConfiguration(), address);
+        ServerConnectionFactoryBuilder connections = ServerConnectionFactoryBuilder.defaults().setServerModule(getNetModule());
+        return SimpleServerBuilder.fromConnections(ServerConnectionsHandler.Builder.withConnectionBuilder(connections)).setRuntimeModule(getRuntimeModule());
     }
     
-    protected SimpleClientBuilder getDefaultClientBuilder() {
-        return SimpleClientBuilder.defaults(
-                serverBuilder.getConnectionsBuilder().getConnectionBuilder().getAddress(), netModule).setRuntimeModule(runtime);
+    protected ConnectionClientExecutorService.Builder getDefaultClientBuilder() {
+        EnsembleViewConfiguration.set(getRuntimeModule().getConfiguration(), EnsembleView.copyOf(getServerBuilder().getConnectionsBuilder().getConnectionBuilder().getAddress()));
+        return ConnectionClientExecutorService.builder().setConnectionBuilder(ClientConnectionFactoryBuilder.defaults().setClientModule(getNetModule())).setRuntimeModule(getRuntimeModule());
     }
 
     protected List<Service> getServices() {

@@ -1,7 +1,6 @@
 package edu.uw.zookeeper.clients.jmx;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -16,11 +15,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Iterables;
 
-import edu.uw.zookeeper.EnsembleRoleView;
 import edu.uw.zookeeper.EnsembleRole;
+import edu.uw.zookeeper.EnsembleView;
 import edu.uw.zookeeper.ServerInetAddressView;
 import edu.uw.zookeeper.ServerRoleView;
-import edu.uw.zookeeper.ServerView;
 import edu.uw.zookeeper.clients.jmx.Jmx.JmxBeanNode;
 import edu.uw.zookeeper.common.DefaultsFactory;
 import edu.uw.zookeeper.data.NameTrie;
@@ -41,14 +39,14 @@ public abstract class ServerViewJmxQuery {
         try {
             MBeanServerConnection mbeans = connector.getMBeanServerConnection();
             output.append("ClientAddress").append(' ');
-            ServerView.Address<InetSocketAddress> addressView = addressViewOf(mbeans);
+            ServerInetAddressView addressView = addressViewOf(mbeans);
             if (addressView != null) {
                 output.append(addressView);
             } else {
                 output.append("not found");
             }
             output.append('\n').append("Quorum").append(' ');
-            EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleView = ensembleViewOf(mbeans);
+            EnsembleView<ServerRoleView> ensembleView = ensembleViewOf(mbeans);
             if (ensembleView != null) {
                 output.append(ensembleView);
             } else {
@@ -109,7 +107,7 @@ public abstract class ServerViewJmxQuery {
         return null;
     }
     
-    public static EnsembleRoleView<InetSocketAddress, ServerInetAddressView> ensembleViewOf(MBeanServerConnection mbeans) throws IOException {
+    public static EnsembleView<ServerRoleView> ensembleViewOf(MBeanServerConnection mbeans) throws IOException {
         Jmx.ServerSchema schema = Jmx.ServerSchema.REPLICATED_SERVER;
         NameTrie<JmxBeanNode> objectNames = schema.instantiate(mbeans);
         if (objectNames == null || objectNames.isEmpty()) {
@@ -124,7 +122,7 @@ public abstract class ServerViewJmxQuery {
                         schema.pathOf(Jmx.Key.LEADER),
                         EnsembleRole.FOLLOWING,
                         schema.pathOf(Jmx.Key.FOLLOWER));
-        List<ServerRoleView<InetSocketAddress, ServerInetAddressView>> servers = Lists.newLinkedList();
+        List<ServerRoleView> servers = Lists.newLinkedList();
         for (ObjectName name: objectNames.get(schema.pathOf(Jmx.Key.REPLICA)).getNames()) {
             String address;
             try {
@@ -144,10 +142,10 @@ public abstract class ServerViewJmxQuery {
                     }
                 }
             }
-            ServerRoleView<InetSocketAddress, ServerInetAddressView> quorumView = ServerRoleView.of(addressView, role);
+            ServerRoleView quorumView = ServerRoleView.of(addressView, role);
             servers.add(quorumView);
         }
-        return EnsembleRoleView.fromRoles(servers);
+        return EnsembleView.copyOf(servers);
     }
     
     private ServerViewJmxQuery() {}

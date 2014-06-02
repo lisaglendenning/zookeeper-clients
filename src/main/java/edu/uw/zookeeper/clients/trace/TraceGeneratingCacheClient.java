@@ -39,7 +39,7 @@ public class TraceGeneratingCacheClient extends ZooKeeperApplication.ForwardingA
             for (Service service: delegate.build()) {
                 monitor.add(service);
             }
-            return new TraceGeneratingCacheClient(ServiceApplication.newInstance(monitor));
+            return new TraceGeneratingCacheClient(ServiceApplication.forService(monitor));
         }
     }
 }

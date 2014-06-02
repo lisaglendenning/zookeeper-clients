@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.Service;
 import edu.uw.zookeeper.EnsembleView;
 import edu.uw.zookeeper.ServerInetAddressView;
 import edu.uw.zookeeper.ZooKeeperApplication;
-import edu.uw.zookeeper.client.ConfigurableEnsembleView;
+import edu.uw.zookeeper.client.EnsembleViewConfiguration;
 import edu.uw.zookeeper.client.EnsembleViewFactory;
 import edu.uw.zookeeper.client.ServerViewFactory;
 import edu.uw.zookeeper.common.Automaton;
@@ -208,12 +208,12 @@ public class ConnectionClientExecutorsService
 
         @Override
         protected ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> getDefaultConnectionClientExecutorsService() {
-            EnsembleView<ServerInetAddressView> ensemble = ConfigurableEnsembleView.get(getRuntimeModule().getConfiguration());
+            EnsembleView<ServerInetAddressView> ensemble = EnsembleViewConfiguration.get(getRuntimeModule().getConfiguration());
             final EnsembleViewFactory<? extends ServerViewFactory<Session, ? extends OperationClientExecutor<?>>> ensembleFactory = 
                     EnsembleViewFactory.fromSession(
-                        clientConnectionFactory,
+                        getClientConnectionFactory(),
                         ensemble, 
-                        connectionBuilder.getTimeOut(),
+                        getConnectionBuilder().getTimeOut(),
                         getRuntimeModule().getExecutors().get(ScheduledExecutorService.class));
             ConnectionClientExecutorsService<Operation.Request, Session, OperationClientExecutor<?>> service =
                     ConnectionClientExecutorsService.newInstance(
