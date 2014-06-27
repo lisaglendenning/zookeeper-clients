@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.Service;
 import edu.uw.zookeeper.client.ConnectionClientExecutorService;
 import edu.uw.zookeeper.client.ClientExecutor;
 import edu.uw.zookeeper.client.LimitOutstandingClient;
-import edu.uw.zookeeper.client.TreeFetcher;
+import edu.uw.zookeeper.client.TreeWalker;
 import edu.uw.zookeeper.client.random.RandomRequestGenerator;
 import edu.uw.zookeeper.data.LockableZNodeCache;
 import edu.uw.zookeeper.data.ZNodeCache;
@@ -39,7 +39,7 @@ public class TraceGeneratingCacheClientBuilder extends TraceGeneratingClientBuil
         
         @Override
         protected void startUp() throws Exception {
-            TreeFetcher.builder().setClient(cache).build().get();
+            TreeWalker.builder().setRequests(TreeWalker.toRequests(TreeWalker.parameters().setSync(true))).setClient(cache).build().get();
         }
 
         @Override

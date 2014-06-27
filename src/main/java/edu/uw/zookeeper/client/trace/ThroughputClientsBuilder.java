@@ -31,7 +31,7 @@ import edu.uw.zookeeper.common.CountingGenerator;
 import edu.uw.zookeeper.common.Factory;
 import edu.uw.zookeeper.common.Generator;
 import edu.uw.zookeeper.common.Generators;
-import edu.uw.zookeeper.common.LoggingPromise;
+import edu.uw.zookeeper.common.LoggingFutureListener;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.RunnableService;
 import edu.uw.zookeeper.common.RuntimeModule;
@@ -216,7 +216,8 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                         IteratingClient client = IteratingClient.create(
                                 executor, 
                                 task, 
-                                LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));
+                                SettableFuturePromise.<Void>create());
+                        LoggingFutureListener.listen(logger, client);
                         clients.add(client);
                     }
                     

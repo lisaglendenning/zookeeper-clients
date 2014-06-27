@@ -10,7 +10,7 @@ import edu.uw.zookeeper.client.IteratingClient;
 import edu.uw.zookeeper.client.SubmitGenerator;
 import edu.uw.zookeeper.common.CountingGenerator;
 import edu.uw.zookeeper.common.Generator;
-import edu.uw.zookeeper.common.LoggingPromise;
+import edu.uw.zookeeper.common.LoggingFutureListener;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
 import edu.uw.zookeeper.protocol.proto.Records;
@@ -35,7 +35,8 @@ public abstract class TraceGeneratingClientBuilder<C extends TraceGeneratingClie
                         SubmitGenerator.create(
                                 getDefaultRequestGenerator(), 
                                 getDefaultClientExecutor())),
-                LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));
+                SettableFuturePromise.<Void>create());
+        LoggingFutureListener.listen(logger, callable);
         return new Runnable() {
             @Override
             public void run() {

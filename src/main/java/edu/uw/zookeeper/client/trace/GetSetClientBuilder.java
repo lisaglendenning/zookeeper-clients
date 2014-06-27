@@ -28,7 +28,7 @@ import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.Generator;
 import edu.uw.zookeeper.common.Generators;
-import edu.uw.zookeeper.common.LoggingPromise;
+import edu.uw.zookeeper.common.LoggingFutureListener;
 import edu.uw.zookeeper.common.Pair;
 import edu.uw.zookeeper.common.RuntimeModule;
 import edu.uw.zookeeper.common.SettableFuturePromise;
@@ -307,7 +307,8 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
                                     }
                          }),
                          untraced.getConnectionClientExecutor());
-                IteratingClient client = IteratingClient.create(executor, operations, LoggingPromise.create(logger, SettableFuturePromise.<Void>create()));
+                IteratingClient client = IteratingClient.create(executor, operations, SettableFuturePromise.<Void>create());
+                LoggingFutureListener.listen(logger, client);
                 executor.execute(client);
                 try {
                     client.get();
