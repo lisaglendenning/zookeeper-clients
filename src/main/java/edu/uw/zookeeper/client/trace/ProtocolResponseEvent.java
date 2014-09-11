@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 import edu.uw.zookeeper.protocol.Message;
@@ -50,7 +51,7 @@ public final class ProtocolResponseEvent implements TraceEvent {
     
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("sessionId", sessionId)
                 .add("response", response).toString();
     }

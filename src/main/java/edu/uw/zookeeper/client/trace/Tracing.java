@@ -9,9 +9,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import net.engio.mbassy.bus.config.SyncBusConfiguration;
-import net.engio.mbassy.bus.SyncMessageBus;
-
+import net.engio.mbassy.bus.BusFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -294,10 +292,10 @@ public abstract class Tracing {
             }
         }
         
-        @SuppressWarnings("rawtypes")
+        @SuppressWarnings({ "unchecked" })
         protected TraceEventPublisherService getDefaultTracePublisher() {
             return TraceEventPublisherService.newInstance(
-                    new SyncMessageBus<TraceEvent>(new SyncBusConfiguration()), 
+                    BusFactory.SynchronousOnly(),
                     getDefaultTraceWriter());
         }
     }

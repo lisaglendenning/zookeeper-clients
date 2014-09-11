@@ -8,6 +8,7 @@ import java.util.Iterator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -179,7 +180,7 @@ public class CsvSchema implements Appender<Writer> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .addValue(columns)
                 .add("column", delimitColumn)
                 .add("record", delimitRecord)

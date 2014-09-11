@@ -2,8 +2,7 @@ package edu.uw.zookeeper.client.trace;
 
 import java.util.Set;
 
-import net.engio.mbassy.bus.config.SyncBusConfiguration;
-import net.engio.mbassy.bus.SyncMessageBus;
+import net.engio.mbassy.bus.BusFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
@@ -104,7 +103,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
                 types.build());
     }
     
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "unchecked" })
     @Override
     protected TraceEventPublisherService getDefaultTracePublisher() {
         TraceWriter writer = getDefaultTraceWriter();
@@ -125,7 +124,7 @@ public class MeasuringClientBuilder extends TraceGeneratingClientBuilder<Measuri
                     getRuntimeModule().getConfiguration(), actor);
         }
         return TraceEventPublisherService.newInstance(
-                new SyncMessageBus<Object>(new SyncBusConfiguration()), 
+                BusFactory.SynchronousOnly(), 
                 actor);
     }
     

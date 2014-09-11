@@ -1,6 +1,7 @@
 package edu.uw.zookeeper.client.trace.csv;
 
 import com.google.common.base.Function;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 public final class CsvColumn {
@@ -48,7 +49,7 @@ public final class CsvColumn {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .addValue(name)
                 .addValue(type)
                 .toString();

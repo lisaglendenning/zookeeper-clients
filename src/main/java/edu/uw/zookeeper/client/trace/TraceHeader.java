@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +54,7 @@ public final class TraceHeader {
     
     @Override
     public String toString() {
-        return Objects.toStringHelper(this).add("date", date).add("description", description).add("types", types).toString();
+        return MoreObjects.toStringHelper(this).add("date", date).add("description", description).add("types", types).toString();
     }
 
     @Override

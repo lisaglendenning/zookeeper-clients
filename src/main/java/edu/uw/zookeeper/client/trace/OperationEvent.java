@@ -1,6 +1,7 @@
 package edu.uw.zookeeper.client.trace;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 import edu.uw.zookeeper.protocol.Operation;
@@ -67,7 +69,7 @@ public final class OperationEvent implements TraceEvent {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("nanos", nanos)
                 .add("sessionId", sessionId)
                 .add("request", request)

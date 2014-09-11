@@ -3,8 +3,7 @@ package edu.uw.zookeeper.client.trace;
 import java.util.List;
 import java.util.Set;
 
-import net.engio.mbassy.bus.config.SyncBusConfiguration;
-import net.engio.mbassy.bus.SyncMessageBus;
+import net.engio.mbassy.bus.BusFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -141,7 +140,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                 TraceEventTag.THROUGHPUT_MEASUREMENT_EVENT);
     }
     
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings("unchecked")
     @Override
     protected TraceEventPublisherService getDefaultTracePublisher() {
         TraceWriter writer = getDefaultTraceWriter();
@@ -157,7 +156,7 @@ public class ThroughputClientsBuilder extends Tracing.TraceWritingBuilder<List<S
                     FilteringTraceEventActor.create(
                             filter, writer));
         return TraceEventPublisherService.newInstance(
-                new SyncMessageBus<Object>(new SyncBusConfiguration()), 
+                BusFactory.SynchronousOnly(), 
                 actor);
     }
     

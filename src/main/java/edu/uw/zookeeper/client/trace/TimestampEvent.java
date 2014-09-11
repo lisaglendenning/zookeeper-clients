@@ -1,6 +1,7 @@
 package edu.uw.zookeeper.client.trace;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 @TraceEventType(TraceEventTag.TIMESTAMP_EVENT)
@@ -45,8 +47,8 @@ public final class TimestampEvent implements TraceEvent {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
-                .add("timestamp", timestamp)
+        return MoreObjects.toStringHelper(this)
+                .addValue(timestamp)
                 .toString();
     }
     

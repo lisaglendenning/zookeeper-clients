@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 @TraceEventType(TraceEventTag.LATENCY_MEASUREMENT_EVENT)
@@ -50,7 +51,7 @@ public final class LatencyMeasurementEvent implements TraceEvent {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("micros", micros)
                 .toString();
     }
