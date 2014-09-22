@@ -65,7 +65,7 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
         }
     }
 
-    @Configurable(arg="data", key="dataMaxMB", value="0.1", type=ConfigValueType.NUMBER, help="znode data max MB")
+    @Configurable(arg="data", key="dataMaxMB", value="0.1", type=ConfigValueType.NUMBER, help="znode data max MiB")
     public static class DataMaxMBConfiguration implements Function<Configuration, Float> {
 
         public static Float get(Configuration configuration) {
@@ -338,13 +338,12 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
                 Generators.dereferencing(
                         BinGenerator.create(
                             getRandom(), 
-                            Iterators.forArray(
-                                    Pair.create(
-                                            getPercentage, 
-                                            Generators.constant(Operations.Requests.getData())), 
-                                    Pair.create(
-                                            Float.valueOf(1.0f - getPercentage.floatValue()), 
-                                            SetDataGenerator.forData(RandomData.create(getRandom(), 0, (int) (dataMaxMB.floatValue() * Math.pow(2, 20)))))))));
+                                Pair.create(
+                                        getPercentage, 
+                                        Generators.constant(Operations.Requests.getData())), 
+                                Pair.create(
+                                        Float.valueOf(1.0f - getPercentage.floatValue()), 
+                                        SetDataGenerator.forData(RandomData.create(getRandom(), 0, (int) (dataMaxMB.floatValue() * Math.pow(2, 20))))))));
     }
     
     protected Random getDefaultRandom() {
