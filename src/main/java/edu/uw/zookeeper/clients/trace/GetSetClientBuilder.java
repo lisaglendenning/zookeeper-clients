@@ -341,13 +341,12 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
                 Generators.dereferencing(
                         BinGenerator.create(
                             getRandom(), 
-                            Iterators.forArray(
-                                    Pair.create(
-                                            getPercentage, 
-                                            Generators.constant(Operations.Requests.getData())), 
-                                    Pair.create(
-                                            Float.valueOf(1.0f - getPercentage.floatValue()), 
-                                            SetDataGenerator.forData(RandomData.create(getRandom(), 0, (int) (dataMaxMB.floatValue() * Math.pow(2, 20)))))))));
+                            Pair.create(
+                                    getPercentage, 
+                                    Generators.constant(Operations.Requests.getData())), 
+                            Pair.create(
+                                    Float.valueOf(1.0f - getPercentage.floatValue()), 
+                                    SetDataGenerator.forData(RandomData.create(getRandom(), 0, (int) (dataMaxMB.floatValue() * Math.pow(2, 20))))))));
     }
 
     @Override
