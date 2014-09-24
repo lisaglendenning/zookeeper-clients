@@ -29,8 +29,9 @@ public class LatencyMeasuringActor implements Actor<TraceEvent> {
     @Override
     public boolean send(TraceEvent message) {
         if (message instanceof OperationEvent) {
-            LatencyMeasurementEvent event = LatencyMeasurementEvent.fromNanos(((OperationEvent) message).getNanos());
-            delegate.send(event);
+            OperationEvent operation = (OperationEvent) message;
+            long latency = Math.max(0L, operation.getResponseNanos() - operation.getRequestNanos());
+            LatencyMeasurementEvent event = LatencyMeasurementEvent.fromNanos(latency);            delegate.send(event);
         }
         return delegate.send(message);
     }

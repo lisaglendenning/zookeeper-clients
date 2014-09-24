@@ -1,6 +1,7 @@
 package edu.uw.zookeeper.clients.trace;
 
 import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -11,7 +12,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Objects;
-
 import edu.uw.zookeeper.protocol.Operation;
 
 @TraceEventType(TraceEventTag.OPERATION_EVENT)
@@ -21,36 +21,43 @@ public final class OperationEvent implements TraceEvent {
 
     public static OperationEvent timeout(
             long sessionId, Operation.ProtocolRequest<?> request) {
-        return new OperationEvent(LATENCY_TIMEOUT, sessionId, request, null);
+        return new OperationEvent(sessionId, request, TIMEOUT, null, TIMEOUT);
     }
     
     public static OperationEvent create(
-            long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
-        return new OperationEvent(nanos, sessionId, request, response);
+            long sessionId, 
+            Operation.ProtocolRequest<?> request, 
+            long requestNanos,
+            Operation.ProtocolResponse<?> response,
+            long responseNanos) {
+        return new OperationEvent(sessionId, request, requestNanos, response, responseNanos);
     }
     
-    public static long LATENCY_TIMEOUT = -1L;
+    public static long TIMEOUT = -1L;
     
-    private final long nanos;
     private final long sessionId;
     private final Operation.ProtocolRequest<?> request;
+    private final long requestNanos;
     private final Operation.ProtocolResponse<?> response;
+    private final long responseNanos;
     
-    public OperationEvent(long nanos, long sessionId, Operation.ProtocolRequest<?> request, Operation.ProtocolResponse<?> response) {
+    public OperationEvent(
+            long sessionId, 
+            Operation.ProtocolRequest<?> request, 
+            long requestNanos,
+            Operation.ProtocolResponse<?> response,
+            long responseNanos) {
         super();
-        this.nanos = nanos;
         this.sessionId = sessionId;
         this.request = request;
+        this.requestNanos = requestNanos;
         this.response = response;
+        this.responseNanos = responseNanos;
     }
 
     @Override
     public TraceEventTag getTag() {
         return TraceEventTag.OPERATION_EVENT;
-    }
-
-    public long getNanos() {
-        return nanos;
     }
     
     public long getSessionId() {
@@ -61,17 +68,26 @@ public final class OperationEvent implements TraceEvent {
         return request;
     }
 
+    public long getRequestNanos() {
+        return requestNanos;
+    }
+
     public Operation.ProtocolResponse<?> getResponse() {
         return response;
+    }
+
+    public long getResponseNanos() {
+        return responseNanos;
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("nanos", nanos)
                 .add("sessionId", sessionId)
                 .add("request", request)
-                .add("response", response).toString();
+                .add("requestNanos", requestNanos)
+                .add("response", response)
+                .add("responseNanos", responseNanos).toString();
     }
     
     @Override
@@ -83,15 +99,16 @@ public final class OperationEvent implements TraceEvent {
             return false;
         }
         OperationEvent other = (OperationEvent) obj;
-        return (nanos == other.nanos)
-                && (sessionId == other.sessionId)
+        return (sessionId == other.sessionId)
                 && request.equals(other.request)
-                && response.equals(other.response);
+                && (requestNanos == other.requestNanos)
+                && response.equals(other.response)
+                && (responseNanos == other.responseNanos);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hashCode(nanos, sessionId, request, response);
+        return (int) requestNanos;
     }
 
     public static class Serializer extends ListSerializer<OperationEvent> {
@@ -108,17 +125,18 @@ public final class OperationEvent implements TraceEvent {
         protected void serializeValue(OperationEvent value, JsonGenerator json,
                 SerializerProvider provider) throws IOException,
                 JsonGenerationException {
-            json.writeNumber(value.nanos);
             json.writeNumber(value.sessionId);
             if (value.request == null) {
                 json.writeNull();
             } else {
                 provider.findValueSerializer(value.request.getClass(), null).serialize(value.request, json, provider);
+                json.writeNumber(value.requestNanos);
             }
             if (value.response == null) {
                 json.writeNull();
             } else {
                 provider.findValueSerializer(value.response.getClass(), null).serialize(value.response, json, provider);
+                json.writeNumber(value.responseNanos);
             }
         }
     }
@@ -149,23 +167,38 @@ public final class OperationEvent implements TraceEvent {
             if (token != JsonToken.VALUE_NUMBER_INT) {
                 throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
             }
-            long nanos = json.getLongValue();
-            token = json.nextToken();
-            if (token != JsonToken.VALUE_NUMBER_INT) {
-                throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
-            }
             long sessionId = json.getLongValue();
             json.clearCurrentToken();
-            Operation.ProtocolRequest<?>request = (token == JsonToken.VALUE_NULL) ? null : (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
+            Operation.ProtocolRequest<?> request = (token == JsonToken.VALUE_NULL) ? null : (Operation.ProtocolRequest<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolRequest.class), null).deserialize(json, ctxt);
             token = json.getCurrentToken();
             if (token == null) {
                 token = json.nextToken();
+            }
+            long requestNanos;
+            if (request != null) {
+                if (token != JsonToken.VALUE_NUMBER_INT) {
+                    throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+                }
+                requestNanos = json.getLongValue();
+                token = json.nextToken();
+            } else {
+                requestNanos = TIMEOUT;
             }
             Operation.ProtocolResponse<?> response = (token == JsonToken.VALUE_NULL) ? null : (Operation.ProtocolResponse<?>) ctxt.findContextualValueDeserializer(ctxt.constructType(Operation.ProtocolResponse.class), null).deserialize(json, ctxt);
             if (json.hasCurrentToken()) {
                 json.clearCurrentToken();
             }
-            OperationEvent value = new OperationEvent(nanos, sessionId, request, response);
+            long responseNanos;
+            if (response != null) {
+                if (token != JsonToken.VALUE_NUMBER_INT) {
+                    throw ctxt.wrongTokenException(json, JsonToken.VALUE_NUMBER_INT, "");
+                }
+                responseNanos = json.getLongValue();
+                token = json.nextToken();
+            } else {
+                responseNanos = TIMEOUT;
+            }
+            OperationEvent value = new OperationEvent(sessionId, request, requestNanos, response, responseNanos);
             return value;
         }
     }
