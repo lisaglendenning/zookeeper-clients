@@ -83,8 +83,8 @@ public class OperationTracingCodec extends ForwardingProtocolCodec<Message.Clien
                     if (pending != null) {
                         if (pending.request.xid() == response.xid()) {
                             times.remove(pending);
-                            long latency = System.nanoTime() - pending.nanos;
-                            OperationEvent event = OperationEvent.create(latency, sessionId, pending.request, response); 
+                            long responseNanos = System.nanoTime();
+                            OperationEvent event = OperationEvent.create(sessionId, pending.request, pending.nanos, response, responseNanos); 
                             publisher.publish(event);
                         }
                     }

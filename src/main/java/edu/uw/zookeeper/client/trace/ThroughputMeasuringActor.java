@@ -3,11 +3,13 @@ package edu.uw.zookeeper.client.trace;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 
 import edu.uw.zookeeper.common.Actor;
 import edu.uw.zookeeper.common.Configurable;
 import edu.uw.zookeeper.common.Configuration;
 import edu.uw.zookeeper.common.TimeValue;
+import edu.uw.zookeeper.protocol.proto.OpCode;
 
 public class ThroughputMeasuringActor implements Actor<TraceEvent> {
 
@@ -69,23 +71,34 @@ public class ThroughputMeasuringActor implements Actor<TraceEvent> {
     public boolean send(TraceEvent message) {
         if (message instanceof OperationEvent) {
             OperationEvent operation = (OperationEvent) message;
-            if ((operation.getRequest() != null) && (operation.getResponse() != null)) {
-                ThroughputMeasurementEvent event = null;
+            if ((operation.getRequest() != null) && (operation.getResponse() != null) && (operation.getRequest().record().opcode() != OpCode.CLOSE_SESSION)) {
+                ImmutableList.Builder<TraceEvent> events = ImmutableList.builder();
                 synchronized (this) {
-                    count += 1;
-                    long nanos = System.nanoTime();
                     if (start == 0) {
-                        start = nanos;
-                    } else {
-                        long duration = nanos - start;
-                        if (duration >= interval) {
-                            event = ThroughputMeasurementEvent.fromNanos(count, duration);
-                            start = nanos;
+                        start = operation.getRequestNanos();
+                    }
+                    // complete preceding intervals
+                    long duration = Math.max(0L, operation.getResponseNanos() - start);
+                    while (duration > interval) {
+                        events.add(ThroughputMeasurementEvent.fromNanos(count, interval));
+                        if (count != 0) {
                             count = 0;
-                        } 
+                        }
+                        start += interval;
+                        duration -= interval;
+                    }
+                    count += 1;
+                    // complete this interval
+                    if (duration == interval) {
+                        events.add(ThroughputMeasurementEvent.fromNanos(count, interval));
+                        if (count != 0) {
+                            count = 0;
+                        }
+                        start += interval;
+                        duration = 0;
                     }
                 }
-                if (event != null) {
+                for (TraceEvent event: events.build()) {
                     delegate.send(event);
                 }
             }
