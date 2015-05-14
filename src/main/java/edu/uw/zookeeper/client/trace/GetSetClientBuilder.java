@@ -93,7 +93,7 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
             }
             int branching = configuration.withConfigurable(configurable)
                 .getConfigOrEmpty(configurable.path())
-                    .getInt(configurable.key());
+                    .getInt(configurable.arg());
             checkArgument(branching > 0);
             try {
                 configurable = PerfectTreeParameters.class.getDeclaredField("depth").getAnnotation(Configurable.class);
@@ -102,15 +102,15 @@ public class GetSetClientBuilder extends MeasuringClientBuilder {
             }
             int depth = configuration.withConfigurable(configurable)
                 .getConfigOrEmpty(configurable.path())
-                    .getInt(configurable.key());
+                    .getInt(configurable.arg());
             checkArgument(depth > 0);
             return new PerfectTreeParameters(branching, depth);
         }
 
-        @Configurable(arg="branching", path="data", key="branching", value="2", type=ConfigValueType.NUMBER)
+        @Configurable(arg="branching", path="data", value="2", type=ConfigValueType.NUMBER)
         private final int branching;
 
-        @Configurable(arg="depth", path="data", key="depth", value="3", type=ConfigValueType.NUMBER)
+        @Configurable(arg="depth", path="data", value="3", type=ConfigValueType.NUMBER)
         private final int depth;
         
         protected PerfectTreeParameters(int branching, int depth) {

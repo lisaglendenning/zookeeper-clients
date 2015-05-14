@@ -93,6 +93,7 @@
 						<configuration>
 							<excludes>
 								<exclude>log4j2.xml</exclude>
+                                <exclude>reference.conf</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -104,6 +105,7 @@
 						<configuration>
 							<excludes>
 								<exclude>log4j2.xml</exclude>
+                                <exclude>reference.conf</exclude>
 							</excludes>
 						</configuration>
 					</execution>

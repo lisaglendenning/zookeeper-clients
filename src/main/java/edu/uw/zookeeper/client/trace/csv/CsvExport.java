@@ -95,7 +95,7 @@ public class CsvExport implements Application {
         }
     }
 
-    @Configurable(arg="latencies", key="latencySeries", value="true", type=ConfigValueType.BOOLEAN)
+    @Configurable(arg="latencies", path="csv", key="latencySeries", value="true", type=ConfigValueType.BOOLEAN)
     public static class LatencySeriesConfiguration implements Function<Configuration, Boolean> {
 
         public static Boolean get(Configuration configuration) {
@@ -111,7 +111,7 @@ public class CsvExport implements Application {
         }
     }
 
-    @Configurable(arg="operations", key="operationsSeries", value="true", type=ConfigValueType.BOOLEAN)
+    @Configurable(arg="operations", path="csv", key="operationsSeries", value="true", type=ConfigValueType.BOOLEAN)
     public static class OperationsSeriesConfiguration implements Function<Configuration, Boolean> {
 
         public static Boolean get(Configuration configuration) {

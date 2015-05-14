@@ -23,6 +23,11 @@
             <outputDirectory>/etc</outputDirectory>
             <source>${project.build.directory}/classes/log4j2.xml</source>
         </file>
+        <file>
+            <outputDirectory>/etc</outputDirectory>
+            <source>${project.build.directory}/classes/reference.conf</source>
+            <destName>clients.conf</destName>
+        </file>
     </files>
 	<fileSets>
         <fileSet>
