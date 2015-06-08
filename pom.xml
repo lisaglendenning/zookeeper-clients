@@ -10,12 +10,25 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<properties>
+        <maven.build.timestamp.format>yyyy-MM-dd-HH:mm</maven.build.timestamp.format>
+        <main.class>edu.uw.zookeeper.client.trace.MeasuringClient</main.class>
+        <main.prefix>ZKCLIENTS_</main.prefix>
+        <main.timestamp>${maven.build.timestamp}</main.timestamp>
 		<!-- OS X 10.5+ - must first change version of java in utilities/Java Preferences -->
 		<!-- <java.tools.path>/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Classes/classes.jar</java.tools.path> -->
 		<!-- everything else -->
 		<java.tools.path>${java.home}/../lib/tools.jar</java.tools.path>
 	</properties>
 	<build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>reference.conf</exclude>
+                </excludes>
+            </resource>
+        </resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -30,7 +43,7 @@
 						<configuration>
 							<classifier>sources</classifier>
 							<includeArtifactIds>zkcore</includeArtifactIds>
-							<includes>log4j2.xml</includes>
+							<includes>main.py,log4j2.xml</includes>
 							<outputDirectory>src/main/resources</outputDirectory>
 						</configuration>
 					</execution>
@@ -92,6 +105,7 @@
 						</goals>
 						<configuration>
 							<excludes>
+                                <exclude>main.py</exclude>
 								<exclude>log4j2.xml</exclude>
                                 <exclude>reference.conf</exclude>
 							</excludes>
@@ -138,6 +152,7 @@
 						<fileset>
 							<directory>src/main/resources</directory>
 							<includes>
+                                <include>main.py</include>
 								<include>log4j2.xml</include>
 							</includes>
 							<followSymlinks>false</followSymlinks>
@@ -188,7 +203,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.11</version>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

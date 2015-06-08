@@ -28,6 +28,11 @@
             <source>${project.build.directory}/classes/reference.conf</source>
             <destName>clients.conf</destName>
         </file>
+        <file>
+            <outputDirectory>/bin</outputDirectory>
+            <source>${project.build.directory}/classes/main.py</source>
+            <fileMode>0755</fileMode>
+        </file>
     </files>
 	<fileSets>
         <fileSet>
