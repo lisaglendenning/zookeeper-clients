@@ -25,7 +25,7 @@
         </file>
         <file>
             <outputDirectory>/etc</outputDirectory>
-            <source>${project.build.directory}/classes/reference.conf</source>
+            <source>${project.basedir}/src/main/resources/reference.conf</source>
             <destName>clients.conf</destName>
         </file>
         <file>
